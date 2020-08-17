@@ -958,17 +958,29 @@ class EditProduct extends Component {
                 )}
                 
               </Grid>
+              <Grid item lg={12} md={12} sm={12} xs={12}>
+                <TextField
+                    label="Notes"
+                    fullWidth
+                    multiline={true}
+                    rows={5}
+                    name="notes"
+                    onChange={this.handleChange}
+                    value={notes}
+                />
+              </Grid>
 
               <Grid item lg={12} md={12} sm={12} xs={12}>
-                <Table style={{border: '1px solid rgba(224, 224, 224, 1)'}}>
+                <div className="w-100 overflow-auto" style={{paddingBottom: '250px'}}>
+                  <Table style={{border: '1px solid rgba(224, 224, 224, 1)', whiteSpace: "pre"}}>
                     <colgroup>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'40%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
+                      <col style={{width:'100px'}}/>
+                      <col style={{width:'300px'}}/>
+                      <col style={{width:'100px'}}/>
+                      <col style={{width:'100px'}}/>
+                      <col style={{width:'50px'}}/>
+                      <col style={{width:'50px'}}/>
+                      <col style={{width:'100px'}}/>
                     </colgroup>
                     <TableHead>
                         <TableRow>
@@ -1055,18 +1067,8 @@ class EditProduct extends Component {
                       }
                         
                     </TableBody>
-                </Table>
-              </Grid>
-              <Grid item lg={12} md={12} sm={12} xs={12}>
-                <TextField
-                    label="Notes"
-                    fullWidth
-                    multiline={true}
-                    rows={5}
-                    name="notes"
-                    onChange={this.handleChange}
-                    value={notes}
-                />
+                  </Table>
+                </div>
               </Grid>
             </Grid>
           </ValidatorForm>

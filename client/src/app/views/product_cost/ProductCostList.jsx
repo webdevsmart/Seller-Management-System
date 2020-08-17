@@ -77,7 +77,7 @@ class ProductCostList extends Component {
     overrides: {
       MUIDataTableBodyCell: {
         root: {
-          textAlign: 'center',
+          // textAlign: 'center',
         }
       },
       MUIDataTableBodyRow: {
@@ -113,26 +113,26 @@ class ProductCostList extends Component {
         customBodyRenderLite: (dataIndex) => {
           return (
             <>
-            <div className="flex">
-              <p className="mr-10">
+            <div className="flex flex-wrap">
+              <p className="mr-10" style={{whiteSpace: 'nowrap'}}>
               <label className="font-weight-bold">SKU: </label>
               {this.state.productCostList[dataIndex].sku}
               </p>
-              <p className="mr-10">
+              <p className="mr-10" style={{whiteSpace: 'nowrap'}}>
               <label className="font-weight-bold">Parent: </label>
               {this.state.productCostList[dataIndex].parent}
               </p>
-              <p className="mr-10">
+              <p className="mr-10" style={{whiteSpace: 'nowrap'}}>
               <label className="font-weight-bold">UPC: </label>
               {this.state.productCostList[dataIndex].upc}
               </p>
             </div>
-            <div className="flex">
-              <p className="mr-10">
+            <div className="flex flex-wrap">
+              <p className="mr-10" style={{whiteSpace: 'nowrap'}}>
               <label className="font-weight-bold">Name: </label>
               {this.state.productCostList[dataIndex].name}
               </p>
-              <p className="mr-10">
+              <p className="mr-10" style={{whiteSpace: 'nowrap'}}>
               <label className="font-weight-bold">ASIN: </label>
               {this.state.productCostList[dataIndex].asin}
               </p>
@@ -197,13 +197,6 @@ class ProductCostList extends Component {
           </>
           )
         },
-        customBodyRender: (value) => {
-          return (
-            <div style={{textAlign: 'center'}} >
-              {value}
-            </div>
-          )
-        },
       }
       },
       {
@@ -217,13 +210,6 @@ class ProductCostList extends Component {
             <TableCell key={index} style={{backgroundColor: '#b9ecff', textAlign: 'center'}}>
                 {column.label}
             </TableCell>
-          )
-        },
-        customBodyRender: (value) => {
-          return (
-            <div style={{textAlign: 'center'}} >
-              {value}
-            </div>
           )
         },
       }
@@ -241,13 +227,6 @@ class ProductCostList extends Component {
             </TableCell>
           )
         },
-        customBodyRender: (value) => {
-          return (
-            <div style={{textAlign: 'center'}} >
-              {value}
-            </div>
-          )
-        },
       }
       },
       {
@@ -261,13 +240,6 @@ class ProductCostList extends Component {
             <TableCell key={index} style={{backgroundColor: '#b9ecff', textAlign: 'center'}}>
                 {column.label}
             </TableCell>
-          )
-        },
-        customBodyRender: (value) => {
-          return (
-            <div style={{textAlign: 'center'}} >
-              {value}
-            </div>
           )
         },
       }
@@ -285,13 +257,6 @@ class ProductCostList extends Component {
             </TableCell>
           )
         },
-        customBodyRender: (value) => {
-          return (
-            <div style={{textAlign: 'center'}} >
-              {value}
-            </div>
-          )
-        },
       }
       },
       {
@@ -305,13 +270,6 @@ class ProductCostList extends Component {
             <TableCell key={index} style={{backgroundColor: '#b9ecff', textAlign: 'center'}}>
                 {column.label}
             </TableCell>
-          )
-        },
-        customBodyRender: (value) => {
-          return (
-            <div style={{textAlign: 'center'}} >
-              {value}
-            </div>
           )
         },
       }
@@ -329,13 +287,6 @@ class ProductCostList extends Component {
             </TableCell>
           )
         },
-        customBodyRender: (value) => {
-          return (
-            <div style={{textAlign: 'center'}} >
-              {value}
-            </div>
-          )
-        },
       }
       },
       {
@@ -349,13 +300,6 @@ class ProductCostList extends Component {
             <TableCell key={index} style={{backgroundColor: '#b9ecff', textAlign: 'center'}}>
                 {column.label}
             </TableCell>
-          )
-        },
-        customBodyRender: (value) => {
-          return (
-            <div style={{textAlign: 'center'}} >
-              {value}
-            </div>
           )
         },
       }

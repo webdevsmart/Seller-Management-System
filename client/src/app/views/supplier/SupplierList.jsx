@@ -183,7 +183,7 @@ class SupplierList extends Component {
         </Link>
         <Card className="w-100 overflow-auto" elevation={6}>
           <MUIDataTable
-            className="crud-table"
+            className="pl-24 pr-24"
             title={"Supplier List"}
             data={supplierList}
             columns={columns}

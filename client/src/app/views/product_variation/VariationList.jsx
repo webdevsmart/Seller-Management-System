@@ -167,7 +167,7 @@ class ProductVariationList extends Component {
         </div>
         <Card className="w-100 overflow-auto" elevation={6}>
           <MUIDataTable
-            className="crud-table"
+            className="pl-24 pr-24"
             title={"Variation List"}
             data={variationList}
             columns={columns}

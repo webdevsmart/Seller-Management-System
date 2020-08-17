@@ -174,7 +174,7 @@ class MiscList extends Component {
         </div>
         <Card className="w-100 overflow-auto" elevation={6}>
           <MUIDataTable
-            className="crud-table"
+            className="pl-24 pr-24"
             title={"Misc List"}
             data={miscList}
             columns={columns}

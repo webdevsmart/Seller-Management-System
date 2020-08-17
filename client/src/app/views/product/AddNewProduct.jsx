@@ -830,7 +830,7 @@ class AddNewProduct extends Component {
                     </TableBody>
                 </Table>
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              <Grid item lg={3} md={5} sm={6} xs={12}>
                 <CustomSelect
                   textFieldProps={{
                     label: 'Freight',
@@ -845,7 +845,7 @@ class AddNewProduct extends Component {
                   handleChange={this.handleSelectFreight}
                 />
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              <Grid item lg={3} md={2} sm={6} xs={6}>
                 <TextField 
                   type="text"
                   label='QTY'
@@ -854,7 +854,7 @@ class AddNewProduct extends Component {
                   readOnly
                   />
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              <Grid item lg={3} md={2} sm={6} xs={6}>
                 {selectedFreight && (
                   <TextField 
                     label='UM'
@@ -874,7 +874,7 @@ class AddNewProduct extends Component {
                 
               </Grid>
               
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              <Grid item lg={3} md={5} sm={6} xs={12}>
                 <CustomSelect
                   textFieldProps={{
                     label: 'Storage',
@@ -889,7 +889,7 @@ class AddNewProduct extends Component {
                   handleChange={(data) => this.setState({selectedStorage: data, storageDuration: 1})}
                 />
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              <Grid item lg={3} md={2} sm={6} xs={6}>
                 <TextField 
                   label='Duration'
                   type="number"
@@ -897,7 +897,7 @@ class AddNewProduct extends Component {
                   value={storageDuration}
                   onChange={this.handleChange} />
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              <Grid item lg={3} md={2} sm={6} xs={6}>
                 {selectedStorage && (
                   <TextField 
                     label='UM'
@@ -916,105 +916,6 @@ class AddNewProduct extends Component {
                 )}
                 
               </Grid>
-
-              <Grid item lg={12} md={12} sm={12} xs={12}>
-                <Table style={{border: '1px solid rgba(224, 224, 224, 1)'}}>
-                    <colgroup>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'40%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
-                    </colgroup>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell colSpan={1} align='center' className="bg-light-green">
-                              <Fab color="primary" aria-label="Add" onClick={this.addNewPart}>
-                                <Icon>add</Icon>
-                              </Fab>
-                            </TableCell>
-                            <TableCell colSpan={6} align='center' className="bg-light-green">
-                                PARTS
-                            </TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell colSpan={6} align='right'>
-                              OEM:
-                            </TableCell>
-                            <TableCell colSpan={1}>
-                              {
-                                selectedParts.map((part) => {
-                                  if (part && part.cost_usd && part.qty)
-                                    oem += parseFloat(part.cost_usd) * parseFloat(part.qty);
-                                })
-                              }
-                              $ {oem}
-                            </TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell align="center">ID Code</TableCell>
-                            <TableCell align="center">Name</TableCell>
-                            <TableCell align="center">Type</TableCell>
-                            <TableCell align="center">UM</TableCell>
-                            <TableCell align="center">UPrice</TableCell>
-                            <TableCell align="center">Qty</TableCell>
-                            <TableCell align="center">Total</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {
-                        partsIDCode && partsIDCode.map((idCode, index) => {
-                          return (
-                            <TableRow key={index}>
-                              <TableCell className="px-10" align="center">
-                                <TextValidator
-                                    onChange={(e) => this.handleSearchParts(e, index)}
-                                    type="text"
-                                    readOnly
-                                    value={idCode}
-                                    inputProps={{min: 0, style: { textAlign: 'center' }}}
-                                />
-                              </TableCell>
-                              <TableCell align='center' className="pr-10">
-                                <CustomSelect
-                                  textFieldProps={{
-                                    InputLabelProps: {
-                                      htmlFor: "react-select-single",
-                                      shrink: true,
-                                    },
-                                    placeholder: "",
-                                  }}
-                                  handleChange={(data) => this.handleSelectParts(data, index)}
-                                  selectedValue={selectedParts[index] && selectedParts[index]}
-                                  options={partsList}
-                                />
-                              </TableCell>
-                            <TableCell className="px-10" align="center">
-                              {selectedParts[index] && selectedParts[index].type.name}
-                            </TableCell>
-                            <TableCell className="px-10" align="center">
-                              {selectedParts[index] && selectedParts[index].UM.short_name}
-                            </TableCell>
-                            <TableCell className="px-10" align="center">
-                              $ {selectedParts[index] && selectedParts[index].cost_usd}
-                            </TableCell>
-                            <TableCell className="px-10" align="center">
-                              {selectedParts[index] && selectedParts[index].qty}
-                            </TableCell>
-                            <TableCell className="px-10" align="center">
-                              $ {selectedParts[index] && parseFloat(selectedParts[index].qty * selectedParts[index].cost_usd).toFixed(2)}
-                            </TableCell>
-                          </TableRow>
-                          )
-                          
-                        })
-                      }
-                        
-                    </TableBody>
-                </Table>
-              </Grid>
               <Grid item lg={12} md={12} sm={12} xs={12}>
                 <TextField
                     label="Notes"
@@ -1026,6 +927,107 @@ class AddNewProduct extends Component {
                     value={notes}
                 />
               </Grid>
+              <Grid item lg={12} md={12} sm={12} xs={12}>
+                <div className="w-100 overflow-auto" style={{paddingBottom: '250px'}}>
+                  <Table style={{border: '1px solid rgba(224, 224, 224, 1)', whiteSpace: "pre"}}>
+                      <colgroup>
+                          <col style={{width:'100px'}}/>
+                          <col style={{width:'300px'}}/>
+                          <col style={{width:'100px'}}/>
+                          <col style={{width:'100px'}}/>
+                          <col style={{width:'50px'}}/>
+                          <col style={{width:'50px'}}/>
+                          <col style={{width:'100px'}}/>
+                      </colgroup>
+                      <TableHead>
+                          <TableRow>
+                              <TableCell colSpan={1} align='center' className="bg-light-green">
+                                <Fab color="primary" aria-label="Add" onClick={this.addNewPart}>
+                                  <Icon>add</Icon>
+                                </Fab>
+                              </TableCell>
+                              <TableCell colSpan={6} align='center' className="bg-light-green">
+                                  PARTS
+                              </TableCell>
+                          </TableRow>
+                          <TableRow>
+                              <TableCell colSpan={6} align='right'>
+                                OEM:
+                              </TableCell>
+                              <TableCell colSpan={1}>
+                                {
+                                  selectedParts.map((part) => {
+                                    if (part && part.cost_usd && part.qty)
+                                      oem += parseFloat(part.cost_usd) * parseFloat(part.qty);
+                                  })
+                                }
+                                $ {oem}
+                              </TableCell>
+                          </TableRow>
+                          <TableRow>
+                              <TableCell align="center">ID Code</TableCell>
+                              <TableCell align="center">Name</TableCell>
+                              <TableCell align="center">Type</TableCell>
+                              <TableCell align="center">UM</TableCell>
+                              <TableCell align="center">UPrice</TableCell>
+                              <TableCell align="center">Qty</TableCell>
+                              <TableCell align="center">Total</TableCell>
+                          </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {
+                          partsIDCode && partsIDCode.map((idCode, index) => {
+                            return (
+                              <TableRow key={index}>
+                                <TableCell className="px-10" align="center">
+                                  <TextValidator
+                                      onChange={(e) => this.handleSearchParts(e, index)}
+                                      type="text"
+                                      readOnly
+                                      value={idCode}
+                                      inputProps={{min: 0, style: { textAlign: 'center' }}}
+                                  />
+                                </TableCell>
+                                <TableCell align='center' component="th" scope="row" className="pr-10">
+                                  <CustomSelect
+                                    textFieldProps={{
+                                      InputLabelProps: {
+                                        htmlFor: "react-select-single",
+                                        shrink: true,
+                                      },
+                                      placeholder: "",
+                                    }}
+                                    handleChange={(data) => this.handleSelectParts(data, index)}
+                                    selectedValue={selectedParts[index] && selectedParts[index]}
+                                    options={partsList}
+                                  />
+                                </TableCell>
+                              <TableCell className="px-10" align="center">
+                                {selectedParts[index] && selectedParts[index].type.name}
+                              </TableCell>
+                              <TableCell className="px-10" align="center">
+                                {selectedParts[index] && selectedParts[index].UM.short_name}
+                              </TableCell>
+                              <TableCell className="px-10" align="center">
+                                $ {selectedParts[index] && selectedParts[index].cost_usd}
+                              </TableCell>
+                              <TableCell className="px-10" align="center">
+                                {selectedParts[index] && selectedParts[index].qty}
+                              </TableCell>
+                              <TableCell className="px-10" align="center">
+                                $ {selectedParts[index] && parseFloat(selectedParts[index].qty * selectedParts[index].cost_usd).toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                            )
+                            
+                          })
+                        }
+                          
+                      </TableBody>
+                  </Table>
+                </div>
+              </Grid>
+              
             </Grid>
           </ValidatorForm>
         </SimpleCard>

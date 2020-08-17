@@ -439,15 +439,16 @@ class AddNewSupplier extends Component {
                 />
               </Grid>
               <Grid item lg={12} md={12} sm={12} xs={12} style={{minHeight: '500px'}}>
-                <Table style={{border: '1px solid rgba(224, 224, 224, 1)'}}>
+                <div className="w-100 overflow-auto" style={{paddingBottom: '300px'}}>
+                  <Table style={{border: '1px solid rgba(224, 224, 224, 1)', whiteSpace: "pre"}}>
                     <colgroup>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'40%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
-                        <col style={{width:'10%'}}/>
+                      <col style={{width:'100px'}}/>
+                      <col style={{width:'300px'}}/>
+                      <col style={{width:'150px'}}/>
+                      <col style={{width:'150px'}}/>
+                      <col style={{width:'100px'}}/>
+                      <col style={{width:'100px'}}/>
+                      <col style={{width:'100px'}}/>
                     </colgroup>
                     <TableHead>
                         <TableRow>
@@ -546,7 +547,8 @@ class AddNewSupplier extends Component {
                       }
                         
                     </TableBody>
-                </Table>
+                  </Table>
+                </div>
               </Grid>
             </Grid>
           </ValidatorForm>
