@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import axios from "axios";
 import {
   Card,
   Checkbox,
@@ -25,7 +26,16 @@ class SignUp extends Component {
   };
 
   handleFormSubmit = event => {
-    
+    const newUser = {
+      name: this.state.username,
+      password: this.state.password,
+      email: this.state.email,
+      role: 'ADMIN'
+    };
+    axios.post("/api/users/register", newUser)
+    .then((res) => {
+      this.props.history.push("/session/signin");
+    });
   };
   render() {
     let { username, email, password } = this.state;

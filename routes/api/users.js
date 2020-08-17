@@ -22,11 +22,7 @@ router.post("/register", (req, res) => {
     if (user) {
       return res.status(400).json({ email: "Email already exists" });
     } else {
-      const newUser = new User({
-        name: 'Super Administrator',
-        email: req.body.email,
-        password: req.body.password
-      });
+      const newUser = new User(req.body);
 
       // Hash password before saving in database
       bcrypt.genSalt(10, (err, salt) => {
