@@ -273,7 +273,7 @@ class ProductCostList extends Component {
       }
       },
       {
-      name: "shopifyFeeCost",
+      name: "shopifyFee",
       label: "Shopify Fees",
       options: {
         filter: false,
@@ -295,7 +295,7 @@ class ProductCostList extends Component {
       }
       },
       {
-      name: "shopifyFee",
+      name: "shopifyFeeCost",
       label: "Cost",
       options: {
         filter: false,
