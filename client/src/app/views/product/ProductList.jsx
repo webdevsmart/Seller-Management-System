@@ -33,7 +33,8 @@ class ProductList extends Component {
     warningOpen: false,
     warningMessage: "",
     lightboxOpen: false,
-    lightboxImg: null,
+    productImages: [],
+    lightboxIndex: 0,
   };
 
   handleDialogClose = () => {
@@ -77,7 +78,7 @@ class ProductList extends Component {
   };
 
   handleClickAvatar = (img) => {
-    this.setState({ lightboxImg: img, lightboxOpen: true })
+    this.setState({ productImages: img, lightboxOpen: true, lightboxIndex: 0, })
   }
   
   getMuiTheme = () => createMuiTheme({
@@ -98,8 +99,9 @@ class ProductList extends Component {
       shouldOpenConfirmationDialog,
       warningOpen,
       warningMessage,
+      lightboxIndex,
       lightboxOpen,
-      lightboxImg,
+      productImages,
     } = this.state;
     
     const columns = [
@@ -119,12 +121,18 @@ class ProductList extends Component {
           },
           customBodyRenderLite: (dataIndex) => {
             return (
-              <a href="#!" onClick={() => this.handleClickAvatar(this.state.productList[dataIndex].img)}>
-                <Avatar
-                  className="avatar"
-                  src={`/${this.state.productList[dataIndex].img}`}
-                />
-              </a>
+              <>
+              {
+                this.state.productList[dataIndex] && (
+                  <a href="#!" onClick={() => this.handleClickAvatar(this.state.productList[dataIndex].img)}>
+                    <Avatar
+                      className="avatar"
+                      src={`/${this.state.productList[dataIndex].img[0].path}`}
+                    />
+                  </a>
+                )
+              }
+              </>
             );
           }
         }
@@ -240,10 +248,23 @@ class ProductList extends Component {
           )}
           
         </Card>
-        { lightboxOpen && lightboxImg && (
+        
+        { lightboxOpen && productImages && (
           <Lightbox
-            mainSrc={`/${lightboxImg}`}
-            onCloseRequest={() => this.setState({ lightboxImg: null,lightboxOpen: false })}
+            mainSrc={`/${productImages[lightboxIndex].path}`}
+            nextSrc={`/${productImages[(lightboxIndex + 1) % productImages.length].path}`}
+            prevSrc={`/${productImages[(lightboxIndex + productImages.length - 1) % productImages.length].path}`}
+            onCloseRequest={() => this.setState({ lightboxOpen: false })}
+            onMovePrevRequest={() =>
+              this.setState({
+                lightboxIndex: (lightboxIndex + productImages.length - 1) % productImages.length,
+              })
+            }
+            onMoveNextRequest={() =>
+              this.setState({
+                lightboxIndex: (lightboxIndex + 1) % productImages.length,
+              })
+            }
           />
         )}
 

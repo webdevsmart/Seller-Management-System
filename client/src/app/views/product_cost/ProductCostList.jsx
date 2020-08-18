@@ -38,8 +38,8 @@ class ProductCostList extends Component {
       let tmpList = [];
       res.data.map((item) => {
         let oem = 0;
-        item.parts.map((part) => {
-          oem += parseFloat(part.cost_usd) * parseFloat(part.qty)
+        item.parts.map((part, index) => {
+          oem += parseFloat(part.cost_usd) * parseFloat(item.parts_qty[index])
         });
         let amazonFee = parseFloat(item.retail_price) * parseFloat(amazonFeeMisc / 100);
         let retailPrice = parseFloat(item.retail_price);

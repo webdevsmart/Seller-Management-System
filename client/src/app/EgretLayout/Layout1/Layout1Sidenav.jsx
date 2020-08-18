@@ -4,8 +4,6 @@ import {
   Switch,
   Icon,
   withStyles,
-  MenuItem,
-  Tooltip,
   IconButton,
   MuiThemeProvider
 } from "@material-ui/core";
@@ -17,7 +15,7 @@ import {
 } from "app/redux/actions/LayoutActions";
 import { logoutUser } from "app/redux/actions/UserActions";
 import { withRouter } from "react-router-dom";
-import { EgretMenu } from "egret";
+// import { EgretMenu } from "egret";
 import Sidenav from "../SharedCompoents/Sidenav";
 import Brand from "../SharedCompoents/Brand";
 import SidenavTheme from "../EgretTheme/SidenavTheme";
@@ -25,19 +23,19 @@ import { isMdScreen } from "utils";
 
 const styles = theme => ({});
 
-const IconButtonWhite = withStyles(theme => ({
-  root: {
-    // color: theme.palette.getContrastText(purple[500]),
-    backgroundColor: "transparent",
-    padding: "5px"
-  }
-}))(IconButton);
+// const IconButtonWhite = withStyles(theme => ({
+//   root: {
+//     // color: theme.palette.getContrastText(purple[500]),
+//     backgroundColor: "transparent",
+//     padding: "5px"
+//   }
+// }))(IconButton);
 
-const IconSmall = withStyles(() => ({
-  root: {
-    fontSize: "1rem"
-  }
-}))(Icon);
+// const IconSmall = withStyles(() => ({
+//   root: {
+//     fontSize: "1rem"
+//   }
+// }))(Icon);
 
 class Layout1Sidenav extends Component {
   state = {

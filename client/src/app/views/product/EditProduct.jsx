@@ -3,6 +3,7 @@ import {
   Fab,
   Button,
   Icon,
+  Card,
   Grid,
   Table,
   TableHead,
@@ -12,11 +13,22 @@ import {
   TextField,
   RadioGroup,
   FormControlLabel,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Radio
 } from "@material-ui/core";
 import { ValidatorForm, TextValidator } from "react-material-ui-form-validator";
+import MenuItem from "@material-ui/core/MenuItem";
+import Typography from "@material-ui/core/Typography";
+import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import Snackbar from "@material-ui/core/Snackbar";
+import { makeStyles } from '@material-ui/core/styles';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import { green } from '@material-ui/core/colors';
 import { Breadcrumb, SimpleCard } from "egret";
 import CustomSelect from "./CustomSelect";
+import CustomOptionSelect from "./CustomOptionSelect";
 import { getAllCategories } from "../product_category/CategoryService";
 import { getAllVariationType, getAllVariationValue } from "../product_variation/VariationService";
 import { getAllFreight } from "../freight/FreightService";
@@ -26,6 +38,10 @@ import NumberFormat from "react-number-format";
 import { generateRandomId } from "utils";
 import { getAllStorage } from "../storage/StorageService";
 import { getAllFullfillment } from "../fullfillment/FullfillmentService";
+import MySnackbarContentWrapper from "../../components/Snackbar/Snackbar";
+import Lightbox from 'react-image-lightbox';
+import 'react-image-lightbox/style.css';
+import moment from 'moment';
 
 function NumberFormatPrefixCustom(props) {
   const { inputRef, onChange, ...other } = props;
@@ -67,10 +83,55 @@ function NumberFormatCustom(props) {
   );
 }
 
+function NumberWithCM(props) {
+  const { inputRef, onChange, ...other } = props;
+
+  return (
+    <NumberFormat
+      {...other}
+      getInputRef={inputRef}
+      style={{textAlign: 'center'}}
+      onValueChange={values => {
+        onChange({
+          target: {
+            value: values.value
+          }
+        });
+      }}
+      thousandSeparator
+      suffix="cm"
+    />
+  );
+}
+
+const CustomOption = (option) =>
+
+    <div {...option.innerProps}>{
+        partsFormat(option.data)
+    }{/* your component internals */}</div>
+
+
+const partsFormat = ({ label, value, cost_usd, UM, ID, supplier_id }) => {
+  return <MenuItem>
+    <div className="w-100">
+      <div className='flex flex-middle flex-wrap w-100'>
+        <p className="mr-10"><span className="font-weight-500">ID: </span>{ID}</p>
+        <p className="mr-10"><span className="font-weight-500">UM: </span>{UM.short_name}</p>
+        <p className=""><span className="font-weight-500">COST: </span>${cost_usd}</p>
+      </div>
+      <div className="flex flex-middle flex-wap w-100">
+        <p><span className="font-weight-500">Name: </span>{label}</p>
+      </div>
+      <div className="flex flex-middle flex-wap w-100">
+        <p><span className="font-weight-500">Supplier Name: </span>{supplier_id.name}</p>
+      </div>
+    </div>
+  </MenuItem>
+}
+
 class EditProduct extends Component {
   state = {
-    product_image: null,
-    image_file: null,
+    productImages: [],
     name: "",
     SKU: "",
     UPC: "",
@@ -92,14 +153,20 @@ class EditProduct extends Component {
     selectedFreight: null,
     selectedParts: [],
     partsIDCode: [],
+    partsQty: [],
     notes: "",
     selectedStorage: null,
     fullfillmentType: "Amazon",
     storageDuration: 0,
     freightQty: 0,
+    storageQty: 0,
+    expanded: false,
+    squareFeet: "",
+    deletedImages: [],
 
-    selectedVariationType: "",
-    selectedVariationValue: "",
+    variationQualities: [],
+    selectedVariationType: [],
+    selectedVariationValue: [],
     variationTypeList: [],
     variationValueList: [],
     categoryList: [],
@@ -107,6 +174,13 @@ class EditProduct extends Component {
     partsList: [],
     storageList: [],
     fullfillmentList: [],
+    messageOpen: false,
+    message: "",
+    messageType: "success",
+    lightboxOpen: false,
+    lightboxImages: [],
+    lightboxIndex: 0,
+    loading: false,
   };
 
   componentDidMount() {
@@ -121,7 +195,7 @@ class EditProduct extends Component {
       this.setState({ variationTypeList: res.data.map(item => ({value: item._id, label: item._id})) });
     });
     getAllFreight().then((res) => {
-      this.setState({ freightList: res.data.map(item => ({ ...item, value: item._id, label: item.name, UM: item.UM.short_name})) });
+      this.setState({ freightList: res.data.map(item => ({ ...item, value: item._id, label: item.name, costUSD: item.cost_usd, UM: item.UM.short_name})) });
     });
     getAllParts().then((res) => {
       this.setState({ partsList: res.data.map(item => ({ ...item, value: item._id, label: item.name })) }, () => {
@@ -135,20 +209,41 @@ class EditProduct extends Component {
     });
 
     getProductById(this.props.match.params.id).then((res) => {
-      console.log(res.data.parts);
+      let variationQualities = [];
+      res.data.img.map(async (img, index) => {
+        let blob = await fetch(`/${img.path}`).then(r => r.blob());
+        let newFile = new File([blob], img.file_name);
+        let {productImages} = this.state;
+        productImages.push({
+          _id: img._id,
+          preview: URL.createObjectURL(newFile),
+          file: newFile,
+          date: img.date,
+          fileName: img.file_name,
+          isNew: false,
+        });
+        this.setState({productImages});
+      });
+      res.data.variation_qualities.map((item, index) => {
+        variationQualities.push({
+          type: {value: item.type, label: item.type},
+          value: {value: item.value, label: item.value},
+          valueList: []
+        });
+      });
       let curProduct = {
         product_image: '/' + res.data.img,
         name: res.data.name,
         SKU: res.data.sku,
         UPC: res.data.upc,
         ASIN: res.data.asin,
-        selectedVariationType: { value: res.data.variation_type, label: res.data.variation_type },
-        selectedVariationValue: { value: res.data.variation_value, label: res.data.variation_value },
+        variationQualities: variationQualities,
         selectedParentCategory: { ...res.data.parent_category, value: res.data.parent_category._id, label: res.data.parent_category.category },
         selectedCategoryList: res.data.categories.map((cat) => {
           return {...cat, label: cat.category, value: cat._id}
         }),
         retailPrice: res.data.retail_price,
+        squareFeet: res.data.square_feet,
         selectedFFAmazon: { ...res.data.fullfillment_amazon, label: res.data.fullfillment_amazon.name, value: res.data.fullfillment_amazon._id },
         selectedFFThirdParty: { ...res.data.fullfillment_thirdparty, label: res.data.fullfillment_amazon.name, value: res.data.fullfillment_amazon._id },
         selectedFFUs: { ...res.data.fullfillment_us, label: res.data.fullfillment_amazon.name, value: res.data.fullfillment_amazon._id },
@@ -160,11 +255,12 @@ class EditProduct extends Component {
         packagedHeight: res.data.packaged_height,
         packagedDepth: res.data.packaged_depth,
         packagedGrams: res.data.packaged_grams,
-        selectedFreight: { cost_usd: res.data.freight.cost_usd, UM: res.data.freight.UM.short_name, value: res.data.freight._id, label: res.data.freight.name },
+        selectedFreight: { ...res.data.freight, cost_usd: res.data.freight.cost_usd, UM: res.data.freight.UM.short_name, value: res.data.freight._id, label: res.data.freight.name, ID: res.data.freight.ID },
         freightQty: res.data.freight_qty,
-        selectedStorage: { rate: res.data.storage.rate, UM: res.data.storage.UM.short_name, value: res.data.storage._id, label: res.data.storage.name },
+        selectedStorage: { ...res.data.storage, rate: res.data.storage.rate, UM: res.data.storage.UM.short_name, value: res.data.storage._id, label: res.data.storage.name, ID: res.data.storage.ID },
         storageDuration: res.data.storage_duration,
         notes: res.data.notes,
+        partsQty: res.data.parts_qty,
         selectedParts: res.data.parts.map((part) => {
           return {...part, label: part.name, value: part._id}
         }),
@@ -173,32 +269,44 @@ class EditProduct extends Component {
         }),
         fullfillmentType: res.data.fullfillment_type
       }
-      console.log(curProduct.selectedParts);
       this.setState({ ...curProduct });
     });
   }
 
   handleSubmit = (event) => {
+    this.setState({loading: true});
     let fulfillmentFBAFee = this.state.selectedFFAmazon.value;
     if (this.state.fullfillmentType == 'ThirdPary')
       fulfillmentFBAFee = this.state.selectedFFThirdParty.value;
     else if (this.state.fullfillmentType == 'US')
       fulfillmentFBAFee = this.state.selectedFFUs.value;
     let parts = [];
-    this.state.selectedParts.map((part) => {
-      if (part && part.value)
+    let parts_qty = [];
+    this.state.selectedParts.map((part, index) => {
+      if (part && part.value && this.state.partsQty[index] != 0) {
         parts.push(part.value);
+        parts_qty.push(this.state.partsQty[index])
+      }
+    });
+
+    let variation_qualities = [];
+    this.state.variationQualities.map((v) => {
+      if (v.type && v.value)
+        variation_qualities.push({
+          type: v.type.value,
+          value: v.value.value,
+        });
     });
     const newProduct = {
       name: this.state.name,
       sku: this.state.SKU,
       upc: this.state.UPC,
       asin: this.state.ASIN,
-      variation_type: this.state.selectedVariationType.value,
-      variation_value: this.state.selectedVariationValue.value,
+      variation_qualities: JSON.stringify(variation_qualities),
       parent_category: this.state.selectedParentCategory.value,
       categories: this.state.selectedCategoryList.map(a => a.value),
       retail_price: parseFloat(this.state.retailPrice).toFixed(2),
+      square_feet: this.state.squareFeet,
       fullfillment_amazon: this.state.selectedFFAmazon.value,
       fullfillment_thirdparty: this.state.selectedFFThirdParty.value,
       fullfillment_us: this.state.selectedFFUs.value,
@@ -216,6 +324,7 @@ class EditProduct extends Component {
       storage_duration: this.state.storageDuration,
       notes: this.state.notes,
       parts: parts,
+      parts_qty: parts_qty,
       fullfillment_fba_fee: fulfillmentFBAFee,
       fullfillment_type: this.state.fullfillmentType,
     };
@@ -225,14 +334,21 @@ class EditProduct extends Component {
         }
     };
     const formData = new FormData();
-    formData.append('is_new_image', this.state.image_file ? true : false);
-    formData.append('file', this.state.image_file);
+    this.state.productImages.map((image) => {
+      if (image.isNew == true)
+        formData.append('files', image.file);
+    });
     formData.append('_id', this.props.match.params.id);
     formData.append('new_product', JSON.stringify(newProduct));
+    formData.append('deleted_images', this.state.deletedImages);
     updateProduct(formData, config).then((res) => {
-      this.props.history.push('/product/list');
+      this.setState({loading: false});
+      this.setState({messageType: "success", messageOpen: true, message: "You added the product successfully!"}, () => {
+      });
     }).catch((err) => {
-
+      this.setState({loading: false});
+      this.setState({messageType: "warning", messageOpen: true, message: "Something went wrong! please refresh and try again."}, () => {
+      });
     });
   }
 
@@ -243,10 +359,13 @@ class EditProduct extends Component {
     });
   }
 
-  handleSelectVType = (data) => {
-    this.setState({selectedVariationType: data});
+  handleSelectVType = (data, index) => {
     getAllVariationValue(data.value).then((res) => {
-      this.setState({ variationValueList: res.data.map(item => ({value: item._id, label: item._id})) });
+      let { variationQualities } = this.state;
+      variationQualities[index].type = data;
+      variationQualities[index].value = "";
+      variationQualities[index].valueList = res.data.map(item => ({value: item._id, label: item._id}));
+      this.setState({variationQualities});
     });
   }
 
@@ -254,7 +373,7 @@ class EditProduct extends Component {
     e.persist();
     let {partsIDCode, selectedParts} = this.state;
     partsIDCode[index] = e.target.value;
-    let obj = this.state.partsList.find(o => o.ID === e.target.value);
+    let obj = this.state.partsList.find(o => o.ID === e.target.value.toUpperCase());
     if (obj)
       selectedParts[index] = obj;
     else
@@ -264,52 +383,152 @@ class EditProduct extends Component {
 
   handleSelectParts = (data, index) => {
     let {partsIDCode, selectedParts} = this.state;
-    console.log(data);
     partsIDCode[index] = data.ID;
     selectedParts[index] = data;
-    console.log(partsIDCode, selectedParts);
     this.setState({selectedParts: selectedParts, partsIDCode: partsIDCode});
+  }
+
+  handleChangePartsQty = (e, index) => {
+    let {partsQty} = this.state;
+    partsQty[index] = e.target.value;
+    this.setState({partsQty});
   }
   
   addNewPart = () => {
-    let { selectedParts, partsIDCode } = this.state;
+    let { selectedParts, partsIDCode, partsQty } = this.state;
     partsIDCode.push("");
     selectedParts.push(null);
-    this.setState({partsIDCode, selectedParts}, () => {
-      console.log(this.state);
-    });
+    partsQty.push(0);
+    this.setState({partsIDCode, selectedParts, partsQty});
   }
 
   handleSelectFreight = (data) => {
     let freightQty = 0;
     if (data.UM == 'CBM')
-      freightQty = parseFloat(this.state.productWidth * this.state.productHeight * this.state.productDepth);
+      freightQty = parseFloat(this.state.packagedWidth * this.state.packagedHeight * this.state.packagedDepth / 1000000);
     else if (data.UM == 'KG')
-      freightQty = parseFloat(this.state.productGrams / 1000);
+      freightQty = parseFloat(this.state.packagedGrams / 1000);
     else if (data.UM == 'LB')
-      freightQty = parseFloat(this.state.productGrams / 1000 * 2.20462);
+      freightQty = parseFloat(this.state.packagedGrams / 1000 * 2.20462);
     else
       freightQty = 0;
     this.setState({freightQty: freightQty, selectedFreight: data});
   }
-
+  
+  handleSelectStorage = (data) => {
+    let storageDuration = 0;
+    if (data.UM == 'CBM')
+      storageDuration = parseFloat(this.state.packagedWidth * this.state.packagedHeight * this.state.packagedDepth / 1000000);
+    else if (data.UM == 'KG')
+      storageDuration = parseFloat(this.state.packagedGrams / 1000);
+    else if (data.UM == 'LB')
+      storageDuration = parseFloat(this.state.packagedGrams / 1000 * 2.20462);
+    else
+      storageDuration = 0;
+    this.setState({storageDuration: storageDuration, selectedStorage: data});
+  }
+  
   handleChangeMetric = (e, name) => {
     this.setState({
       [name]: e.target.value
     }, () => {
       let freightQty = 0;
+      let storageDuration = 0;
       if (this.state.selectedFreight) {
         if (this.state.selectedFreight.UM == 'CBM')
-          freightQty = parseFloat(this.state.productWidth * this.state.productHeight * this.state.productDepth);
+          freightQty = parseFloat(this.state.packagedWidth * this.state.packagedHeight * this.state.packagedDepth / 1000000);
         else if (this.state.selectedFreight.UM == 'KG')
-          freightQty = parseFloat(this.state.productGrams / 1000);
+          freightQty = parseFloat(this.state.packagedGrams / 1000);
         else if (this.state.selectedFreight.UM == 'LB')
-          freightQty = parseFloat(this.state.productGrams / 1000 * 2.20462);
+          freightQty = parseFloat(this.state.packagedGrams / 1000 * 2.20462);
         else
           freightQty = 0;
         this.setState({freightQty});
       }
+      if (this.state.selectedStorage) {
+        if (this.state.selectedStorage.UM == 'CBM')
+          storageDuration = parseFloat(this.state.packagedWidth * this.state.packagedHeight * this.state.packagedDepth / 1000000);
+        else if (this.state.selectedStorage.UM == 'KG')
+          storageDuration = parseFloat(this.state.packagedGrams / 1000);
+        else if (this.state.selectedStorage.UM == 'LB')
+          storageDuration = parseFloat(this.state.productGrams / 1000 * 2.20462);
+        else
+          storageDuration = 0;
+        this.setState({storageDuration});
+      }
     });
+  }
+
+  closeMessage = () => {
+    this.setState({messageOpen: false});
+  }
+
+  addNewVariationList = () => {
+    let { variationQualities } = this.state;
+    variationQualities.push({
+      type: "",
+      value: "",
+      valueList: [],
+    });
+    this.setState({variationQualities});
+  }
+
+  handleSelectVariationValue = (data, index) => {
+    let {variationQualities} = this.state;
+    variationQualities[index].value = data;
+    this.setState({variationQualities});
+  }
+
+  handleAccordion = () => {
+    let {expanded} = this.state;
+    this.setState({expanded: !expanded});
+  }
+
+  handleSetImages = e => {
+    let files = e.target.files;
+    let {productImages} = this.state;
+    for (let i = 0; i < files.length; i ++) {
+      if (!files[i].type.includes('image')) {
+        this.setState({messageOpen: true, message: "The file format should be image.", messageType: "warning"});
+      }
+      if (files[i].type.includes('image') && parseFloat(files[i].size / 1024 / 1024) <= 10) 
+      {
+        let newImage = {
+          file: files[i],
+          preview: URL.createObjectURL(files[i]),
+          fileName: files[i].name,
+          date: moment().format("YYYY-MM-DD HH:mm:ss"),
+          isNew: true,
+        }
+        productImages.push(newImage);
+      }
+    }
+    this.setState({productImages});
+  }
+
+  deleteImage = index => {
+    let {productImages, deletedImages} = this.state;
+    let item = productImages.indexOf(index);
+    if (productImages[index].isNew == false) {
+      deletedImages.push(productImages[index]._id);
+    }
+    if (index > -1)
+      productImages.splice(index, 1);
+    this.setState({productImages: productImages, deletedImages: deletedImages});
+  }
+
+  downloadImage = index => {
+    let {productImages} = this.state;
+    const url = productImages[index].preview;
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', productImages[index].fileName);
+    document.body.appendChild(link);
+    link.click();
+  }
+
+  openLighbox = index => {
+    this.setState({lightboxOpen: true, lightboxIndex: index})
   }
 
   render() {
@@ -323,9 +542,6 @@ class EditProduct extends Component {
       selectedFFUs,
       selectedFFThirdParty,
       variationTypeList,
-      selectedVariationType,
-      variationValueList,
-      selectedVariationValue,
       categoryList,
       selectedParentCategory,
       selectedCategoryList,
@@ -342,13 +558,24 @@ class EditProduct extends Component {
       freightQty,
       partsList,
       selectedParts,
+      partsQty,
       partsIDCode,
       notes,
       storageList,
       fullfillmentList,
       selectedStorage,
       storageDuration,
-      fullfillmentType
+      fullfillmentType,
+      messageOpen,
+      message,
+      messageType,
+      variationQualities,
+      expanded,
+      productImages,
+      squareFeet,
+      lightboxOpen,
+      lightboxIndex,
+      loading
     } = this.state;
     let oem = 0;
     return (
@@ -366,40 +593,104 @@ class EditProduct extends Component {
               <div className="mb-24">
                 <Button
                   type="submit"
+                  disabled={loading}
                   className="py-8"
                   variant="contained"
                   color="primary"
                 >
                   Save
+                  {loading && <CircularProgress className="ml-10" size={24} />}
                 </Button>
               </div>
             </div>
             <Grid container spacing={6}>
-              <Grid item lg={6} md={6} sm={12} xs={12} className="text-center">
-                <img className="border-radius-4 mb-16" src={this.state.product_image} width="300"/>
-                <div className="">
-                <label htmlFor="upload-single-file">
-                  <Fab
-                    className="capitalize"
-                    color="primary"
-                    component="span"
-                    variant="extended"
+              <Grid item lg={12} md={12} sm={12} xs={12}>
+                <Accordion
+                  expanded={expanded === true}
+                  onChange={this.handleAccordion}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    aria-controls="panel1bh-content"
+                    id="panel1bh-header"
                   >
-                    <div className="flex flex-middle">
-                      <Icon className="pr-8">cloud_upload</Icon>
-                      <span>Upload Product Image</span>
-                    </div>
-                  </Fab>
-                </label>
-                <input
-                  className="display-none"
-                  onChange={(e) => this.setState({product_image: URL.createObjectURL(e.target.files[0]), image_file: e.target.files[0]})}
-                  id="upload-single-file"
-                  type="file"
-                />
-                </div>
-              </Grid>
-              <Grid item lg={6} md={6} sm={12} xs={12}>
+                    <Typography>Click to toggle image section.</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                      <div className="list w-100">
+                        <div className="grid-view">
+                          <Grid container spacing={2}>
+                            {productImages.map((item, index) => (
+                              <Grid item sm={4} xl={2} md={3} xs={12} key={index}>
+                                <Card className="grid__card flex-column h-100" elevation={6}>
+                                  <div className="grid__card-top text-center">
+                                    <img src={item.preview} alt="project" style={{width: '100%', height: '180px', objectFit: 'cover'}}/>
+                                    <div className="grid__card-overlay flex-column">
+                                      <div className="flex flex-middle flex-end">
+                                        <div className="flex flex-middle">
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-middle flex-center">
+                                          <Icon
+                                            fontSize="small"
+                                            className="mr-16 cursor-pointer text-white"
+                                            onClick={(e) => this.downloadImage(index)}
+                                          >
+                                            cloud_download
+                                          </Icon>
+                                          <Icon
+                                            fontSize="small"
+                                            className="mr-16 cursor-pointer text-white"
+                                            onClick={(e) => this.openLighbox(index)}
+                                          >
+                                            zoom_in
+                                          </Icon>
+                                          <Icon
+                                            fontSize="small"
+                                            className="mr-16 cursor-pointer text-white"
+                                            onClick={(e) => this.deleteImage(index)}
+                                          >
+                                            delete
+                                          </Icon>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="grid__card-bottom text-center py-8">
+                                    <p className="m-0">{moment(item.date).format("YYY-MM-DD HH:mm:ss")}</p>
+                                  </div>
+                                </Card>
+                              </Grid>
+                            ))}
+                          </Grid>
+                          <Grid container spacing={2}>
+                            <Grid item sm={12} md={12}>
+                              <label htmlFor="upload-single-file">
+                                <Fab
+                                  className="capitalize"
+                                  color="primary"
+                                  component="span"
+                                  variant="extended"
+                                >
+                                  <div className="flex flex-middle">
+                                    <Icon className="pr-8">cloud_upload</Icon>
+                                    <span>Upload Multiple Image</span>
+                                  </div>
+                                </Fab>
+                              </label>
+                              <input
+                                className="display-none"
+                                onChange={this.handleSetImages}
+                                id="upload-single-file"
+                                type="file"
+                                accept="image/x-png,image/gif,image/jpeg"
+                                multiple
+                              />
+                            </Grid>
+                          </Grid>
+                        </div>
+                      </div>
+                  </AccordionDetails>
+                </Accordion>
               </Grid>
               <Grid item lg={6} md={6} sm={12} xs={12}>
                 <TextValidator
@@ -447,7 +738,12 @@ class EditProduct extends Component {
                 <Table style={{border: '1px solid rgba(224, 224, 224, 1)'}}>
                   <TableHead>
                     <TableRow>
-                      <TableCell colSpan={2} align='center' className="bg-light-green">
+                      <TableCell align='center' className="bg-light-green">  
+                        <Fab size="small" color="primary" aria-label="Add" onClick={this.addNewVariationList}>
+                          <Icon>add</Icon>
+                        </Fab>
+                      </TableCell>
+                      <TableCell align='left' className="bg-light-green">
                           Variation Qualities
                       </TableCell>
                     </TableRow>
@@ -457,36 +753,42 @@ class EditProduct extends Component {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    <TableRow>
-                      <TableCell className="px-10">
-                        <CustomSelect
-                          textFieldProps={{
-                            InputLabelProps: {
-                              htmlFor: "react-select-single",
-                              shrink: true,
-                            },
-                            placeholder: "",
-                          }}
-                          options={variationTypeList}
-                          handleChange={this.handleSelectVType}
-                          selectedValue={selectedVariationType}
-                        />
-                      </TableCell>
-                      <TableCell className="px-10">
-                        <CustomSelect
-                          textFieldProps={{
-                            InputLabelProps: {
-                              htmlFor: "react-select-single",
-                              shrink: true,
-                            },
-                            placeholder: "",
-                          }}
-                          options={variationValueList}
-                          handleChange={(data) => {this.setState({selectedVariationValue: data})}}
-                          selectedValue={selectedVariationValue}
-                        />
-                      </TableCell>
-                    </TableRow>
+                    {
+                      variationQualities.map((variation, index) => {
+                        return (
+                            <TableRow key={index}>
+                              <TableCell className="px-10">
+                                <CustomSelect
+                                  textFieldProps={{
+                                    InputLabelProps: {
+                                      htmlFor: "react-select-single",
+                                      shrink: true,
+                                    },
+                                    placeholder: "",
+                                  }}
+                                  options={variationTypeList}
+                                  handleChange={(data) => this.handleSelectVType(data, index)}
+                                  selectedValue={variation.type}
+                                />
+                              </TableCell>
+                              <TableCell className="px-10">
+                                <CustomSelect
+                                  textFieldProps={{
+                                    InputLabelProps: {
+                                      htmlFor: "react-select-single",
+                                      shrink: true,
+                                    },
+                                    placeholder: "",
+                                  }}
+                                  options={variation.valueList}
+                                  handleChange={(data) => this.handleSelectVariationValue(data, index)}
+                                  selectedValue={variation.value}
+                                />
+                              </TableCell>
+                            </TableRow>
+                        );
+                      })
+                    }
                   </TableBody>
                 </Table>
               </Grid>
@@ -536,6 +838,16 @@ class EditProduct extends Component {
                 />
               </Grid>
               <Grid item lg={6} md={6} sm={12} xs={12}>
+                <TextField
+                  value={squareFeet}
+                  className="w-100 mb-16"
+                  onChange={this.handleChange}
+                  name="squareFeet"
+                  label="Square Feet of Leather"
+                />
+              </Grid>
+
+              <Grid item lg={12} md={12} sm={12} xs={12}>
                 <RadioGroup
                   className="mb-16"
                   value={fullfillmentType}
@@ -562,6 +874,8 @@ class EditProduct extends Component {
                     labelPlacement="end"
                   />
                 </RadioGroup>
+              </Grid>        
+              <Grid item lg={3} md={3} sm={12} xs={12}>
                 <CustomSelect
                   className="mb-16"
                   textFieldProps={{
@@ -576,7 +890,35 @@ class EditProduct extends Component {
                   handleChange={(data) => {this.setState({selectedFFAmazon: data})}}
                   selectedValue={selectedFFAmazon}
                 />
-                <div className="pb-16"></div>
+              </Grid>
+              <Grid item lg={3} md={3} sm={4} xs={4} className="pl-16">
+                {selectedFFAmazon && (
+                  <TextField 
+                    label='ID'
+                    type="text"
+                    value={selectedFFAmazon.ID}
+                    readOnly />
+                )}
+              </Grid>
+              <Grid item lg={3} md={3} sm={4} xs={4}>
+                {selectedFFAmazon && (
+                  <TextField 
+                    label='Rate'
+                    type="text"
+                    value={`$${selectedFFAmazon.rate}`}
+                    readOnly />
+                )}
+              </Grid>
+              <Grid item lg={3} md={3} sm={4} xs={4}>
+                {selectedFFAmazon && (
+                  <TextField 
+                    label='UM'
+                    type="text"
+                    value={selectedFFAmazon.UM.short_name}
+                    readOnly />
+                )}
+              </Grid>
+              <Grid item lg={3} md={3} sm={12} xs={12}>
                 <CustomSelect
                   className="mb-16"
                   textFieldProps={{
@@ -591,7 +933,35 @@ class EditProduct extends Component {
                   handleChange={(data) => {this.setState({selectedFFThirdParty: data})}}
                   selectedValue={selectedFFThirdParty}
                 />
-                <div className="pb-16"></div>
+              </Grid>
+              <Grid item lg={3} md={3} sm={4} xs={4}>
+                {selectedFFThirdParty && (
+                  <TextField 
+                    label='ID'
+                    type="text"
+                    value={selectedFFThirdParty.ID}
+                    readOnly />
+                )}
+              </Grid>
+              <Grid item lg={3} md={3} sm={4} xs={4}>
+                {selectedFFThirdParty && (
+                  <TextField 
+                    label='Rate'
+                    type="text"
+                    value={`$${selectedFFThirdParty.rate}`}
+                    readOnly />
+                )}
+              </Grid>
+              <Grid item lg={3} md={3} sm={4} xs={4}>
+                {selectedFFThirdParty && (
+                  <TextField 
+                    label='UM'
+                    type="text"
+                    value={selectedFFThirdParty.UM.short_name}
+                    readOnly />
+                )}
+              </Grid>
+              <Grid item lg={3} md={3} sm={12} xs={12}>
                 <CustomSelect
                   className="mb-16"
                   textFieldProps={{
@@ -606,7 +976,33 @@ class EditProduct extends Component {
                   handleChange={(data) => {this.setState({selectedFFUs: data})}}
                   selectedValue={selectedFFUs}
                 />
-                <div className="pb-16"></div>
+              </Grid>
+              <Grid item lg={3} md={3} sm={4} xs={4}>
+                {selectedFFUs && (
+                  <TextField 
+                    label='ID'
+                    type="text"
+                    value={selectedFFUs.ID}
+                    readOnly />
+                )}
+              </Grid>
+              <Grid item lg={3} md={3} sm={4} xs={4}>
+                {selectedFFUs && (
+                  <TextField 
+                    label='Rate'
+                    type="text"
+                    value={`$${selectedFFUs.rate}`}
+                    readOnly />
+                )}
+              </Grid>
+              <Grid item lg={3} md={3} sm={4} xs={4}>
+                {selectedFFUs && (
+                  <TextField 
+                    label='UM'
+                    type="text"
+                    value={selectedFFUs.UM.short_name}
+                    readOnly />
+                )}
               </Grid>
               <Grid item lg={6} md={6} sm={12} xs={12}>
                 <Table style={{border: '1px solid rgba(224, 224, 224, 1)'}}>
@@ -634,7 +1030,7 @@ class EditProduct extends Component {
                                 <TextField
                                     onChange={(e) => this.handleChangeMetric(e, "productWidth")}
                                     InputProps={{
-                                      inputComponent: NumberFormatCustom,
+                                      inputComponent: NumberWithCM,
                                       min: 0,
                                       style: { textAlign: 'center' }
                                     }}
@@ -646,7 +1042,7 @@ class EditProduct extends Component {
                                 <TextField
                                     onChange={(e) => this.handleChangeMetric(e, "productHeight")}
                                     InputProps={{
-                                      inputComponent: NumberFormatCustom,
+                                      inputComponent: NumberWithCM,
                                     }}
                                     name="productHeight"
                                     value={productHeight}
@@ -656,14 +1052,14 @@ class EditProduct extends Component {
                                 <TextField
                                     onChange={(e) => this.handleChangeMetric(e, "productDepth")}
                                     InputProps={{
-                                      inputComponent: NumberFormatCustom,
+                                      inputComponent: NumberWithCM,
                                     }}
                                     name="productDepth"
                                     value={productDepth}
                                 />
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                                {parseFloat(productWidth * productHeight * productDepth).toFixed(2)}
+                                {parseFloat((productWidth * productHeight * productDepth)/1000000).toFixed(2)}
                             </TableCell>
                         </TableRow>
                         <TableRow>
@@ -713,7 +1109,7 @@ class EditProduct extends Component {
                                 <TextField
                                     onChange={(e) => this.handleChangeMetric(e, "packagedWidth")}
                                     InputProps={{
-                                      inputComponent: NumberFormatCustom,
+                                      inputComponent: NumberWithCM,
                                     }}
                                     name="packagedWidth"
                                     value={packagedWidth}
@@ -723,7 +1119,7 @@ class EditProduct extends Component {
                                 <TextField
                                     onChange={(e) => this.handleChangeMetric(e, "packagedHeight")}
                                     InputProps={{
-                                      inputComponent: NumberFormatCustom,
+                                      inputComponent: NumberWithCM,
                                     }}
                                     name="packagedHeight"
                                     value={packagedHeight}
@@ -733,14 +1129,14 @@ class EditProduct extends Component {
                                 <TextField
                                     onChange={(e) => this.handleChangeMetric(e, "packagedDepth")}
                                     InputProps={{
-                                      inputComponent: NumberFormatCustom,
+                                      inputComponent: NumberWithCM,
                                     }}
                                     name="packagedDepth"
                                     value={packagedDepth}
                                 />
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(packagedWidth * packagedHeight * packagedDepth).toFixed(2)}
+                              {parseFloat((packagedWidth * packagedHeight * packagedDepth)/1000000).toFixed(2)}
                             </TableCell>
                         </TableRow>
                         <TableRow>
@@ -786,30 +1182,30 @@ class EditProduct extends Component {
                             <TableCell align="center">Width</TableCell>
                             <TableCell align="center">Height</TableCell>
                             <TableCell align="center">Depth</TableCell>
-                            <TableCell align="center">CBM</TableCell>
+                            <TableCell align="center">CBF</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         <TableRow>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(productWidth * 1.0936).toFixed(2)}
+                              {parseFloat(productWidth * 0.393701).toFixed(2)} Inches
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(productHeight * 1.0936).toFixed(2)}
+                              {parseFloat(productHeight * 0.393701).toFixed(2)} Inches
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(productDepth * 1.0936).toFixed(2)}
+                              {parseFloat(productDepth * 0.393701).toFixed(2)} Inches
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(productWidth * productHeight * productDepth * 1.3080).toFixed(2)}
+                              {parseFloat((productWidth * 0.393701 * productHeight * 0.393701 * productDepth * 0.393701)/1728).toFixed(2)}
                             </TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell colSpan={2} align='center' className='font-weight-500'>
-                                Ounzes
+                              Ounzes
                             </TableCell>
                             <TableCell colSpan={2} align='center' className='font-weight-500'>
-                                Pounds
+                              Pounds
                             </TableCell>
                         </TableRow>
                         <TableRow>
@@ -836,21 +1232,21 @@ class EditProduct extends Component {
                                 Depth
                             </TableCell>
                             <TableCell align='center' className='font-weight-500'>
-                                CBM
+                                CBF
                             </TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(packagedWidth * 1.0936).toFixed(2)}
+                              {parseFloat(packagedWidth * 0.393701).toFixed(2)} Inches
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(packagedHeight * 1.0936).toFixed(2)}
+                              {parseFloat(packagedHeight * 0.393701).toFixed(2)} Inches
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(packagedDepth * 1.0936).toFixed(2)}
+                              {parseFloat(packagedDepth * 0.393701).toFixed(2)} Inches
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(packagedWidth * packagedHeight * packagedDepth * 1.3080).toFixed(2)}
+                              {parseFloat((packagedWidth * 0.393701 * packagedHeight * 0.393701 * packagedDepth * 0.393701)/1728).toFixed(2)}
                             </TableCell>
                         </TableRow>
                         <TableRow>
@@ -872,7 +1268,9 @@ class EditProduct extends Component {
                     </TableBody>
                 </Table>
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              
+        {/* =================== Select Freight Part =================== */}
+              <Grid item lg={4} md={4} sm={6} xs={12}>
                 <CustomSelect
                   textFieldProps={{
                     label: 'Freight',
@@ -887,16 +1285,46 @@ class EditProduct extends Component {
                   handleChange={this.handleSelectFreight}
                 />
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
-                <TextField 
-                  type="text"
-                  label='QTY'
-                  name="freightQty"
-                  value={freightQty}
-                  readOnly
-                  />
+              <Grid item lg={1} md={4} sm={6} xs={6} className="text-center">
+                {
+                  selectedFreight && (
+                    <TextField 
+                      label='ID'
+                      type="text"
+                      name="id"
+                      value={selectedFreight.ID}
+                      readOnly
+                      />
+                  )
+                }
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              <Grid item lg={2} md={4} sm={6} xs={6} className="text-center">
+                {
+                  selectedFreight && (
+                    <TextField 
+                      type="text"
+                      label='QTY'
+                      name="freightQty"
+                      value={freightQty}
+                      readOnly
+                      />
+                  )
+                }
+              </Grid>
+              <Grid item lg={1} md={4} sm={6} xs={6} className="text-center">
+                {
+                  selectedFreight && (
+                    <TextField 
+                      label='Rate'
+                      type="text"
+                      name="rate"
+                      value={`$${selectedFreight.cost_usd}`}
+                      readOnly
+                      />
+                  )
+                }
+              </Grid>
+              <Grid item lg={2} md={4} sm={6} xs={6} className="text-center">
                 {selectedFreight && (
                   <TextField 
                     label='UM'
@@ -905,7 +1333,7 @@ class EditProduct extends Component {
                     readOnly />
                 )}
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              <Grid item lg={2} md={4} sm={6} xs={6} className="text-center">
                 {selectedFreight && (
                   <TextField 
                     label='Cost USD'
@@ -913,10 +1341,11 @@ class EditProduct extends Component {
                     value={'$ ' + parseFloat(selectedFreight.cost_usd * freightQty).toFixed(2)}
                     readOnly />
                 )}
-                
-              </Grid>
-              
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              </Grid> 
+        {/* =================== End Select Freight Part =================== */}
+
+        {/* =================== Select Storage Part =================== */}
+              <Grid item lg={4} md={4} sm={6} xs={12}>
                 <CustomSelect
                   textFieldProps={{
                     label: 'Storage',
@@ -928,18 +1357,49 @@ class EditProduct extends Component {
                   }}
                   options={storageList}
                   selectedValue={selectedStorage}
-                  handleChange={(data) => this.setState({selectedStorage: data, storageDuration: 1})}
+                  handleChange={this.handleSelectStorage}
                 />
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
-                <TextField 
-                  label='Duration'
-                  type="number"
-                  name="storageDuration"
-                  value={storageDuration}
-                  onChange={this.handleChange} />
+              <Grid item lg={1} md={4} sm={6} xs={6} className="text-center">
+                {
+                  selectedStorage && (
+                    <TextField 
+                      label='ID'
+                      type="text"
+                      name="id"
+                      value={selectedStorage.ID}
+                      readOnly
+                      />
+                  )
+                }
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              <Grid item lg={2} md={4} sm={6} xs={6} className="text-center">
+                {
+                  selectedStorage && (
+                    <TextField 
+                      label='Duration'
+                      type="number"
+                      name="storageDuration"
+                      value={storageDuration}
+                      readOnly
+                      />
+                  )
+                }
+              </Grid>
+              <Grid item lg={1} md={4} sm={6} xs={6} className="text-center">
+                {
+                  selectedStorage && (
+                    <TextField 
+                      label='Rate'
+                      type="text"
+                      name="rate"
+                      value={`$${selectedStorage.rate}`}
+                      readOnly
+                      />
+                  )
+                }
+              </Grid>
+              <Grid item lg={2} md={4} sm={6} xs={6} className="text-center">
                 {selectedStorage && (
                   <TextField 
                     label='UM'
@@ -948,16 +1408,18 @@ class EditProduct extends Component {
                     readOnly />
                 )}
               </Grid>
-              <Grid item lg={3} md={3} sm={6} xs={6}>
+              <Grid item lg={2} md={4} sm={6} xs={6} className="text-center">
                 {selectedStorage && (
                   <TextField 
-                    label='Rate'
+                    label='Cost USD'
                     type="text"
                     value={'$ ' + parseFloat(selectedStorage.rate * storageDuration).toFixed(2)}
                     readOnly />
                 )}
                 
               </Grid>
+        {/* =================== Ebd Storage Part =================== */}
+
               <Grid item lg={12} md={12} sm={12} xs={12}>
                 <TextField
                     label="Notes"
@@ -973,105 +1435,151 @@ class EditProduct extends Component {
               <Grid item lg={12} md={12} sm={12} xs={12}>
                 <div className="w-100 overflow-auto" style={{paddingBottom: '250px'}}>
                   <Table style={{border: '1px solid rgba(224, 224, 224, 1)', whiteSpace: "pre"}}>
-                    <colgroup>
-                      <col style={{width:'100px'}}/>
-                      <col style={{width:'300px'}}/>
-                      <col style={{width:'100px'}}/>
-                      <col style={{width:'100px'}}/>
-                      <col style={{width:'50px'}}/>
-                      <col style={{width:'50px'}}/>
-                      <col style={{width:'100px'}}/>
-                    </colgroup>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell colSpan={1} align='center' className="bg-light-green">
-                              <Fab color="primary" aria-label="Add" onClick={this.addNewPart}>
-                                <Icon>add</Icon>
-                              </Fab>
-                            </TableCell>
-                            <TableCell colSpan={6} align='center' className="bg-light-green">
-                                PARTS
-                            </TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell colSpan={6} align='right'>
-                              OEM:
-                            </TableCell>
-                            <TableCell colSpan={1}>
-                              {
-                                selectedParts.map((part) => {
-                                  if (part && part.cost_usd && part.qty)
-                                    oem += parseFloat(part.cost_usd) * parseFloat(part.qty);
-                                })
-                              }
-                              $ {oem}
-                            </TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell align="center">ID Code</TableCell>
-                            <TableCell align="center">Name</TableCell>
-                            <TableCell align="center">Type</TableCell>
-                            <TableCell align="center">UM</TableCell>
-                            <TableCell align="center">UPrice</TableCell>
-                            <TableCell align="center">Qty</TableCell>
-                            <TableCell align="center">Total</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {
-                        partsIDCode && partsIDCode.map((idCode, index) => {
-                          return (
-                            <TableRow key={index}>
-                              <TableCell className="px-10" align="center">
-                                <TextValidator
-                                    onChange={(e) => this.handleSearchParts(e, index)}
-                                    type="text"
-                                    readOnly
-                                    value={idCode}
-                                    inputProps={{min: 0, style: { textAlign: 'center' }}}
-                                />
+                      <colgroup>
+                          <col style={{width:'100px'}}/>
+                          <col style={{width:'300px'}}/>
+                          <col style={{width:'100px'}}/>
+                          <col style={{width:'100px'}}/>
+                          <col style={{width:'100px'}}/>
+                          <col style={{width:'50px'}}/>
+                          <col style={{width:'50px'}}/>
+                          <col style={{width:'100px'}}/>
+                      </colgroup>
+                      <TableHead>
+                          <TableRow>
+                              <TableCell colSpan={1} align='center' className="bg-light-green">
+                                <Fab color="primary" aria-label="Add" onClick={this.addNewPart}>
+                                  <Icon>add</Icon>
+                                </Fab>
                               </TableCell>
-                              <TableCell align='center' className="pr-10">
-                                <CustomSelect
-                                  textFieldProps={{
-                                    InputLabelProps: {
-                                      htmlFor: "react-select-single",
-                                      shrink: true,
-                                    },
-                                    placeholder: "",
-                                  }}
-                                  handleChange={(data) => this.handleSelectParts(data, index)}
-                                  selectedValue={selectedParts[index] && selectedParts[index]}
-                                  options={partsList}
-                                />
+                              <TableCell colSpan={7} align='center' className="bg-light-green">
+                                  PARTS
                               </TableCell>
-                            <TableCell className="px-10" align="center">
-                              {selectedParts[index] && selectedParts[index].type.name}
-                            </TableCell>
-                            <TableCell className="px-10" align="center">
-                              {selectedParts[index] && selectedParts[index].UM.short_name}
-                            </TableCell>
-                            <TableCell className="px-10" align="center">
-                              $ {selectedParts[index] && selectedParts[index].cost_usd}
-                            </TableCell>
-                            <TableCell className="px-10" align="center">
-                              {selectedParts[index] && selectedParts[index].qty}
-                            </TableCell>
-                            <TableCell className="px-10" align="center">
-                              $ {selectedParts[index] && parseFloat(selectedParts[index].qty * selectedParts[index].cost_usd).toFixed(2)}
-                            </TableCell>
                           </TableRow>
-                          )
+                          <TableRow>
+                              <TableCell colSpan={7} align='right'>
+                                OEM:
+                              </TableCell>
+                              <TableCell colSpan={1}>
+                                {
+                                  selectedParts.map((part, index) => {
+                                    if (part && part.cost_usd && partsQty[index])
+                                      oem += parseFloat(part.cost_usd) * parseFloat(partsQty[index]);
+                                  })
+                                }
+                                $ {oem}
+                              </TableCell>
+                          </TableRow>
+                          <TableRow>
+                              <TableCell align="center">ID Code</TableCell>
+                              <TableCell align="center">Name</TableCell>
+                              <TableCell align="center">Type</TableCell>
+                              <TableCell align="center">Supplier Country</TableCell>
+                              <TableCell align="center">UM</TableCell>
+                              <TableCell align="center">UPrice</TableCell>
+                              <TableCell align="center">Qty</TableCell>
+                              <TableCell align="center">Total</TableCell>
+                          </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {
+                          partsIDCode && partsIDCode.map((idCode, index) => {
+                            return (
+                              <TableRow key={index}>
+                                <TableCell className="px-10" align="center">
+                                  <TextValidator
+                                      onChange={(e) => this.handleSearchParts(e, index)}
+                                      type="text"
+                                      readOnly
+                                      value={idCode}
+                                      inputProps={{min: 0, style: { textAlign: 'center' }}}
+                                  />
+                                </TableCell>
+                                <TableCell align='center' component="th" scope="row" className="pr-10">
+                                  <CustomOptionSelect
+                                    textFieldProps={{
+                                      InputLabelProps: {
+                                        htmlFor: "react-select-single",
+                                        shrink: true,
+                                      },
+                                      placeholder: "",
+                                    }}
+                                    optionComponent={ CustomOption }
+                                    handleChange={(data) => this.handleSelectParts(data, index)}
+                                    selectedValue={selectedParts[index] && selectedParts[index]}
+                                    options={partsList}
+                                  />
+                                </TableCell>
+                              <TableCell className="px-10" align="center">
+                                {selectedParts[index] && selectedParts[index].type.name}
+                              </TableCell>
+                              <TableCell className="px-10" align="center">
+                                {selectedParts[index] && selectedParts[index].supplier_id.country}
+                              </TableCell>
+                              <TableCell className="px-10" align="center">
+                                {selectedParts[index] && selectedParts[index].UM.short_name}
+                              </TableCell>
+                              <TableCell className="px-10" align="center">
+                                $ {selectedParts[index] && selectedParts[index].cost_usd}
+                              </TableCell>
+                              <TableCell className="px-10" align="center">
+                                <TextField
+                                    onChange={(e) => this.handleChangePartsQty(e, index)}
+                                    InputProps={{
+                                      inputComponent: NumberFormatCustom,
+                                    }}
+                                    name="productDepth"
+                                    value={partsQty[index]}
+                                />
+                              </TableCell>
+                              <TableCell className="px-10" align="center">
+                                $ {selectedParts[index] && parseFloat(partsQty[index] * selectedParts[index].cost_usd).toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                            )
+                            
+                          })
+                        }
                           
-                        })
-                      }
-                        
-                    </TableBody>
+                      </TableBody>
                   </Table>
                 </div>
-              </Grid>
+              </Grid>     
             </Grid>
           </ValidatorForm>
+          <Snackbar
+            anchorOrigin={{
+              vertical: "top",
+              horizontal: "right"
+            }}
+            open={messageOpen}
+            autoHideDuration={2000}
+            onClose={this.closeMessage}
+          >
+            <MySnackbarContentWrapper
+              onClose={this.closeMessage}
+              variant={messageType}
+              message={message}
+            />
+          </Snackbar>
+          { lightboxOpen && productImages && (
+            <Lightbox
+              mainSrc={productImages[lightboxIndex].preview}
+              nextSrc={productImages[(lightboxIndex + 1) % productImages.length].preview}
+              prevSrc={productImages[(lightboxIndex + productImages.length - 1) % productImages.length].preview}
+              onCloseRequest={() => this.setState({ lightboxOpen: false })}
+              onMovePrevRequest={() =>
+                this.setState({
+                  lightboxIndex: (lightboxIndex + productImages.length - 1) % productImages.length,
+                })
+              }
+              onMoveNextRequest={() =>
+                this.setState({
+                  lightboxIndex: (lightboxIndex + 1) % productImages.length,
+                })
+              }
+            />
+          )}
         </SimpleCard>
       </div>
     );

@@ -3,10 +3,11 @@ const Schema = mongoose.Schema;
 
 // Create Schema
 const ProductSchema = new Schema({
-  img: {
-    type: String,
-    required: true,
-  },
+  img: [{
+    path : String,
+    date : String,
+    file_name : String,
+  }],
   ID: {
     type: String,
     required: true
@@ -27,13 +28,9 @@ const ProductSchema = new Schema({
     type: String,
     required: true
   },
-  variation_type: {
-    type: String,
-    required: true
-  },
-  variation_value: {
-    type: String,
-    required: true
+  variation_qualities: {
+    type: Array,
+    "default": [],
   },
   parent_category: {
     type: Schema.Types.ObjectId,
@@ -43,6 +40,10 @@ const ProductSchema = new Schema({
   categories: [{type: Schema.Types.ObjectId, ref: 'product_category'}],
   retail_price: {
     type: Number,
+    required: true,
+  },
+  square_feet: {
+    type: String,
     required: true,
   },
   fullfillment_amazon: {
@@ -98,6 +99,7 @@ const ProductSchema = new Schema({
     required: true,
   },
   parts: [{type: Schema.Types.ObjectId, ref: 'parts'}],
+  parts_qty: [Number],
   freight_qty: {
     type: Number,
     required: true,
