@@ -3,7 +3,6 @@ import {
   IconButton,
   TableCell,
   Icon,
-  Button,
   Card
 } from "@material-ui/core";
 import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
@@ -13,8 +12,6 @@ import { Breadcrumb, ConfirmationDialog } from "egret";
 import PartsEditorDialog from "./PartsEditorDialog";
 import { getAllParts, deleteParts } from "./PartsService";
 import MySnackbarContentWrapper from "../../components/Snackbar/Snackbar";
-import { generateRandomId } from "utils";
-import { addNewParts } from "../parts/PartsService";
 
 const columnStyleWithWidth = {
    width: "600px"
@@ -102,36 +99,6 @@ class PartsList extends Component {
 
   handleChangeCheckbox = name => event => {
     this.setState({ [name]: event.target.checked });
-  }
-
-  makeid = (length) => {
-    var result           = '';
-    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    var charactersLength = characters.length;
-    for ( var i = 0; i < length; i++ ) {
-       result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
- }
-
-  handleAddFakeParts = () => {
-    let fakeParts = [];
-    let parts = ["5f3a13ec2eef4c2b6d3fcf44", "5f3a13f02eef4c2b6d3fcf45", "5f3a13f42eef4c2b6d3fcf46"];
-    let parts_ums = ['5f3a13ca2eef4c2b6d3fcf40', '5f3a13d92eef4c2b6d3fcf42', '5f3a13e42eef4c2b6d3fcf43', '5f3a14152eef4c2b6d3fcf48'];
-    for (let i = 0 ; i < 100 ; i ++) {
-      fakeParts.push({
-        ID: 'P' + generateRandomId(),
-        name: 'Part - ' + this.makeid(5),
-        type: parts[i % 3],
-        cost_usd: (Math.random() * (100 - 10) + 10).toFixed(2),
-        UM: parts_ums[i % 4],
-        qty: parseInt(Math.random() * (100 - 10) + 10),
-        supplier_id: '5f3bc4b3a1f1fe4452dc0016',
-      });
-    }
-    addNewParts(fakeParts).then((res1) => {
-      alert('2222');
-    });
   }
 
   getMuiTheme = () => createMuiTheme({
@@ -266,7 +233,6 @@ class PartsList extends Component {
           <Breadcrumb routeSegments={[{ name: "Parts" }]} />
         </div>
         <Card className="w-100 overflow-auto" elevation={6}>
-          <Button onClick={this.handleAddFakeParts}>ADD Fake Parts</Button>
           <MuiThemeProvider theme={this.getMuiTheme()}>
             <MUIDataTable
               className="crud-table"

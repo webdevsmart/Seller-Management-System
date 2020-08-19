@@ -58,7 +58,7 @@ class CategoryEditorDialog extends Component {
     let { open, handleClose } = this.props;
 
     return (
-      <Dialog onClose={handleClose} open={open}>
+      <Dialog onClose={handleClose} open={open} fullWidth={true} maxWidth="lg" scroll={'paper'}>
         <div className="p-24">
           <h4 className="mb-20">Update Category</h4>
           <ValidatorForm ref="form" onSubmit={this.handleFormSubmit}>

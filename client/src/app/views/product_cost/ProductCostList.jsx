@@ -43,11 +43,11 @@ class ProductCostList extends Component {
         });
         let amazonFee = parseFloat(item.retail_price) * parseFloat(amazonFeeMisc / 100);
         let retailPrice = parseFloat(item.retail_price);
-        let amazonFeeCost = parseFloat(oem) + parseFloat(amazonFee);
         let shopifyFee = parseFloat(item.retail_price) * parseFloat(shopifyFeeMisc / 100);
         let freight = parseFloat(item.freight.cost_usd) * parseFloat(item.freight_qty);
         let storage = parseFloat(item.storage.rate) * parseFloat(item.storage_duration);
-        let shopifyFeeCost = freight + storage + shopifyFee;
+        let amazonFeeCost = parseFloat(oem) + parseFloat(amazonFee) + freight + storage + parseFloat(item.fullfillment_fba_fee.rate);
+        let shopifyFeeCost = oem + freight + storage + shopifyFee + parseFloat(item.fullfillment_fba_fee.rate);
         tmpList.push({
           sku: item.sku,
           upc: item.upc,
