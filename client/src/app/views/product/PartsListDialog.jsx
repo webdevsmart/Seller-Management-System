@@ -13,6 +13,16 @@ import MUIDataTable from "mui-datatables";
 import { ConfirmationDialog } from "egret";
 import CustomToolbar from "./CustomToolbar";
 import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
+import Paper from '@material-ui/core/Paper';
+import Draggable from 'react-draggable';
+
+function PaperComponent(props) {
+  return (
+    <Draggable handle="#draggable-dialog-title" cancel={'[class*="MuiDialogContent-root"]'}>
+      <Paper {...props} />
+    </Draggable>
+  );
+}
 
 const columnStyleWithWidth = {
   width: "600px"
@@ -233,8 +243,10 @@ class PartsDialog extends Component {
     };
 
     return (
-      <Dialog onClose={handleClose} open={open} fullWidth={true} maxWidth="lg" scroll={'paper'}>
-        <DialogTitle id="scroll-dialog-title">Advanced Search</DialogTitle>
+      <Dialog onClose={handleClose} open={open} fullWidth={true} maxWidth="lg" scroll={'paper'} PaperComponent={PaperComponent}>
+        <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
+          Advanced Search
+        </DialogTitle>
         <DialogContent>
           <ValidatorForm ref="form" onSubmit={this.handleFormSubmit}>
             <Grid className="mb-16" container spacing={4}>

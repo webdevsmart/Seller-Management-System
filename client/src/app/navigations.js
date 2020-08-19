@@ -15,11 +15,15 @@ export const navigations = [
     path: "/product-category/list",
   },
   {
+    name: "Supplier",
+    icon: "group_work",
+    path: "/supplier/list",
+  },
+  {
     name: "Parts",
-    iconText: "P",
+    icon: "inbox",
     path: "/parts/list",
   },
-
   {
     name: "Settings",
     icon: "dashboard",
@@ -38,11 +42,6 @@ export const navigations = [
         name: "Parts Type",
         iconText: "T",
         path: "/parts-type/list",
-      },
-      {
-        name: "Supplier",
-        iconText: "S",
-        path: "/supplier/list",
       },
       {
         name: "Supplier Type",
