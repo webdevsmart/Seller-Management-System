@@ -50,12 +50,7 @@ router.post("/add", (req, res) => {
     if (user) {
       return res.status(400).json({ message: "Email already exists" });
     } else {
-      const newUser = new User({
-        name: req.body.name,
-        email: req.body.email,
-        password: req.body.password,
-        role: req.body.role,
-      });
+      const newUser = new User(req.body);
 
       // Hash password before saving in database
       bcrypt.genSalt(10, (err, salt) => {
@@ -82,8 +77,7 @@ router.post("/update", (req, res) => {
     bcrypt.hash(req.body.password, salt, (err, hash) => {
       if (err) throw err;
       const newUser = { $set: {
-          name: req.body.name,
-          email: req.body.email,
+          ...req.body,
           password: hash
         }
       };

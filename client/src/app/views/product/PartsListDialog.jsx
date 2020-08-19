@@ -7,22 +7,20 @@ import {
   Grid,
   TableCell,
   DialogContent,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
 } from "@material-ui/core";
+import { makeStyles } from '@material-ui/core/styles';
 import { ValidatorForm, TextValidator } from "react-material-ui-form-validator";
 import MUIDataTable from "mui-datatables";
 import { ConfirmationDialog } from "egret";
 import CustomToolbar from "./CustomToolbar";
 import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
-import Paper from '@material-ui/core/Paper';
-import Draggable from 'react-draggable';
-
-function PaperComponent(props) {
-  return (
-    <Draggable handle="#draggable-dialog-title" cancel={'[class*="MuiDialogContent-root"]'}>
-      <Paper {...props} />
-    </Draggable>
-  );
-}
+import CloseIcon from '@material-ui/icons/Close';
+import { withStyles } from '@material-ui/core/styles';
+import Slide from '@material-ui/core/Slide';
 
 const columnStyleWithWidth = {
   width: "600px"
@@ -157,8 +155,6 @@ class PartsDialog extends Component {
   render() {
     let { open, handleClose } = this.props;
     let { tableData, selectedRows, shouldOpenConfirmationDialog } = this.state;
-
-
     const columns = [
     {
       name: "ID",
@@ -243,45 +239,42 @@ class PartsDialog extends Component {
     };
 
     return (
-      <Dialog onClose={handleClose} open={open} fullWidth={true} maxWidth="lg" scroll={'paper'} PaperComponent={PaperComponent}>
-        <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
-          Advanced Search
-        </DialogTitle>
-        <DialogContent>
+      <Dialog fullScreen onClose={handleClose} open={open}>
+        <AppBar style={{position: 'relative'}} className="bg-default">
+          <Toolbar>
+            <IconButton edge="start" color="inherit" onClick={handleClose} aria-label="close">
+              <CloseIcon />
+            </IconButton>
+            <Typography variant="h6" style={{flex: 1}}>
+              Advanced Search
+            </Typography>
+            <Button autoFocus variant="contained" color="primary" onClick={this.addSelectedParts}>
+              Add
+            </Button>
+          </Toolbar>
+        </AppBar>
+        <div className="p-10 mt-20">
           <ValidatorForm ref="form" onSubmit={this.handleFormSubmit}>
-            <Grid className="mb-16" container spacing={4}>
-              <MuiThemeProvider theme={this.getMuiTheme()}>
-                <MUIDataTable
-                  title={"Parts List"}
-                  data={tableData}
-                  columns={columns}
-                  options={options}
-                />
-              </MuiThemeProvider>
-            </Grid>
+            <MuiThemeProvider theme={this.getMuiTheme()}>
+              <MUIDataTable
+                title={"Parts List"}
+                data={tableData}
+                columns={columns}
+                options={options}
+              />
+            </MuiThemeProvider>
           </ValidatorForm>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={this.addSelectedParts} color="primary">
-            Add
-          </Button>
-          <Button onClick={() => this.props.handleClose()} color="primary">
-            Cancel
-          </Button>
-        </DialogActions>
-        
-          {shouldOpenConfirmationDialog && (
-            <ConfirmationDialog
-              open={shouldOpenConfirmationDialog}
-              onConfirmDialogClose={this.handleDialogClose}
-              onYesClick={this.handleConfirmationResponse}
-              text="Are you sure to unselect?"
-            />
-          )}
-          
+        </div>
+        {shouldOpenConfirmationDialog && (
+          <ConfirmationDialog
+            open={shouldOpenConfirmationDialog}
+            onConfirmDialogClose={this.handleDialogClose}
+            onYesClick={this.handleConfirmationResponse}
+            text="Are you sure to unselect?"
+          />
+        )}
       </Dialog>
     );
   }
 }
-
-export default PartsDialog;
+export default PartsDialog

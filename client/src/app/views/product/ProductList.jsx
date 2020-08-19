@@ -212,7 +212,7 @@ class ProductList extends Component {
                 <Icon color="error">delete</Icon>
               </IconButton>
               <IconButton onClick={() => this.handleDuplicateProduct(this.state.productList[dataIndex]._id)}>
-                <Icon color="warning">content_copy</Icon>
+                <Icon color="action">content_copy</Icon>
               </IconButton>
               </>
             );
