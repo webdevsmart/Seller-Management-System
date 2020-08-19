@@ -12,7 +12,7 @@ import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
 import MUIDataTable from "mui-datatables";
 import { Breadcrumb, ConfirmationDialog } from "egret";
 import { Link } from "react-router-dom";
-import { getAllProducts, deleteProduct } from "./ProductService";
+import { getAllProducts, deleteProduct, duplicateProduct } from "./ProductService";
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css';
 
@@ -51,6 +51,12 @@ class ProductList extends Component {
       shouldOpenConfirmationDialog: true
     });
   };
+
+  handleDuplicateProduct = mid => {
+    duplicateProduct(mid).then((res) => {
+      this.updatePageData();
+    });
+  }
 
   handleConfirmationResponse = () => {
     deleteProduct(this.state.mid).then((res) => {
@@ -201,9 +207,12 @@ class ProductList extends Component {
                 }
               >
                 <Icon color="primary">edit</Icon>
-              </IconButton>  
+              </IconButton>
               <IconButton onClick={() => this.handleDeleteProduct(this.state.productList[dataIndex]._id)}>
                 <Icon color="error">delete</Icon>
+              </IconButton>
+              <IconButton onClick={() => this.handleDuplicateProduct(this.state.productList[dataIndex]._id)}>
+                <Icon color="warning">content_copy</Icon>
               </IconButton>
               </>
             );

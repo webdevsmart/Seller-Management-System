@@ -15,3 +15,6 @@ export const addNewProduct = (newFormData, config) => {
 export const updateProduct = NewProduct => {
   return axios.post("/api/products/update", NewProduct);
 };
+export const duplicateProduct = id => {
+  return axios.post(`/api/products/duplicate?_id=${id}`);
+}

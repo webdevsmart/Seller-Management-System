@@ -14,59 +14,67 @@ export const navigations = [
     icon: "category",
     path: "/product-category/list",
   },
+  
   {
-    name: "Product Variations",
-    icon: "list",
-    path: "/product-variation/list",
+    name: "Settings",
+    icon: "dashboard",
+    children: [
+      {
+        name: "Product Variations",
+        iconText: "V",
+        path: "/product-variation/list",
+      },
+      {
+        name: "Parts",
+        iconText: "P",
+        path: "/parts/list",
+      },
+      {
+        name: "Parts UM",
+        iconText: "U",
+        path: "/parts-um/list",
+      },
+      {
+        name: "Parts Type",
+        iconText: "T",
+        path: "/parts-type/list",
+      },
+      {
+        name: "Supplier",
+        iconText: "S",
+        path: "/supplier/list",
+      },
+      {
+        name: "Supplier Type",
+        iconText: "T",
+        path: "/supplier-type/list",
+      },
+      {
+        name: "Freight",
+        iconText: "F",
+        path: "/freight/list",
+      },
+      {
+        name: "Storage",
+        iconText: "S",
+        path: "/storage/list",
+      },
+      {
+        name: "Fullfillment",
+        iconText: "F",
+        path: "/fullfillment/list",
+      },
+      {
+        name: "Misc",
+        iconText: "M",
+        path: "/misc/list",
+      },
+      {
+        name: "Users",
+        iconText: "U",
+        path: "/users/list",
+      },
+    ]
   },
-  {
-    name: "Parts",
-    icon: "shopping_basket",
-    path: "/parts/list",
-  },
-  {
-    name: "Parts UM",
-    icon: "description",
-    path: "/parts-um/list",
-  },
-  {
-    name: "Parts Type",
-    icon: "trending_up",
-    path: "/parts-type/list",
-  },
-  {
-    name: "Supplier",
-    icon: "favorite",
-    path: "/supplier/list",
-  },
-  {
-    name: "Supplier Type",
-    icon: "blur_on",
-    path: "/supplier-type/list",
-  },
-  {
-    name: "Freight",
-    icon: "receipt",
-    path: "/freight/list",
-  },
-  {
-    name: "Storage",
-    icon: "inbox",
-    path: "/storage/list",
-  },
-  {
-    name: "Fullfillment",
-    icon: "trending_up",
-    path: "/fullfillment/list",
-  },
-  {
-    name: "Misc",
-    icon: "control_camera",
-    path: "/misc/list",
-  },
-  {
-    name: "Users",
-    icon: "inbox",
-    path: "/users/list",
-  },
+
 ];

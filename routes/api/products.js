@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require('multer');
 const crypto = require('crypto');
+const mongoose = require("mongoose");
 // Load Project model
 const PartsUM = require("../../models/PartsUM");
 const Parts = require("../../models/Parts");
@@ -146,6 +147,19 @@ router.post("/delete", async (req, res) => {
     Product.deleteOne(query, function(err, response) {
         return res.status(200).json({message: "Success"});
     });
+});
+
+router.post("/duplicate", async (req, res) => {
+    const query = { _id: req.query._id };
+    Product.findOne(query, function(err, doc) {
+        let item = doc;
+        item.isNew = true;
+        item._id = mongoose.Types.ObjectId();
+        const newProduct = new Product(item);
+        newProduct.save()
+        .then(item => res.json(item))
+        .catch(err => res.status(400).json(err.message));
+    })
 });
 
 router.get("/cost-list", async (req, res) => {

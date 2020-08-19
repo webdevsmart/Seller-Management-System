@@ -16,6 +16,9 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Tooltip,
+  IconButton,
+  TablePagination,
   Radio
 } from "@material-ui/core";
 import { ValidatorForm, TextValidator } from "react-material-ui-form-validator";
@@ -44,6 +47,7 @@ import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css';
 import moment from 'moment';
 import PartsDialog from "./PartsListDialog";
+import { ConfirmationDialog } from "egret";
 
 function NumberFormatPrefixCustom(props) {
   const { inputRef, onChange, ...other } = props;
@@ -106,33 +110,6 @@ function NumberWithCM(props) {
   );
 }
 
-
-const CustomOption = (option) =>
-
-    <div {...option.innerProps}>{
-        partsFormat(option.data)
-    }{/* your component internals */}</div>
-
-
-const partsFormat = ({ label, value, cost_usd, UM, ID, supplier_id }) => {
-  return <MenuItem>
-    <div className="w-100">
-      <div className='flex flex-middle flex-wrap w-100'>
-        <p className="mr-10"><span className="font-weight-500">ID: </span>{ID}</p>
-        <p className="mr-10"><span className="font-weight-500">UM: </span>{UM.short_name}</p>
-        <p className=""><span className="font-weight-500">COST: </span>${cost_usd}</p>
-      </div>
-      <div className="flex flex-middle flex-wap w-100">
-        <p><span className="font-weight-500">Name: </span>{label}</p>
-      </div>
-      <div className="flex flex-middle flex-wap w-100">
-        <p><span className="font-weight-500">Supplier Name: </span>{supplier_id.name}</p>
-      </div>
-    </div>
-  </MenuItem>
-}
-
-
 class AddNewProduct extends Component {
   state = {
     productImages: [],
@@ -157,7 +134,6 @@ class AddNewProduct extends Component {
     selectedFreight: null,
     selectedParts: [],
     selectedPartsIndex: [],
-    partsQty: [],
     notes: "",
     selectedStorage: null,
     fullfillmentType: "Amazon",
@@ -185,6 +161,10 @@ class AddNewProduct extends Component {
     lightboxIndex: 0,
     loading: false,
     showPartsDialog: false,
+    openConfirmRemoveDialog: false,
+    removeID: null,
+    rowsPerPage: 10,
+    page: 0,
   };
 
   componentDidMount() {
@@ -223,9 +203,9 @@ class AddNewProduct extends Component {
     let parts = [];
     let parts_qty = [];
     this.state.selectedParts.map((part, index) => {
-      if (part && part.value && this.state.partsQty[index] != 0) {
+      if (part && part.value && part.partsQty != 0) {
         parts.push(part.value);
-        parts_qty.push(this.state.partsQty[index])
+        parts_qty.push(part.partsQty);
       }
     });
 
@@ -311,10 +291,13 @@ class AddNewProduct extends Component {
     }
   }
 
-  handleChangePartsQty = (e, index) => {
-    let {partsQty} = this.state;
-    partsQty[index] = e.target.value;
-    this.setState({partsQty});
+  handleChangePartsQty = (e, _id) => {
+    let {selectedParts} = this.state;
+    let index = selectedParts.findIndex(x => x._id === _id);
+    if (index > -1) {
+      selectedParts[index].partsQty = e.target.value;
+      this.setState({selectedParts});
+    }
   }
   
   handleSelectFreight = (data) => {
@@ -331,16 +314,7 @@ class AddNewProduct extends Component {
   }
   
   handleSelectStorage = (data) => {
-    let storageDuration = 0;
-    if (data.UM == 'CBM')
-      storageDuration = parseFloat(this.state.packagedWidth * this.state.packagedHeight * this.state.packagedDepth / 1000000);
-    else if (data.UM == 'KG')
-      storageDuration = parseFloat(this.state.packagedGrams / 1000);
-    else if (data.UM == 'LB')
-      storageDuration = parseFloat(this.state.packagedGrams / 1000 * 2.20462);
-    else
-      storageDuration = 0;
-    this.setState({storageDuration: storageDuration, selectedStorage: data});
+    this.setState({selectedStorage: data});
   }
   
   handleChangeMetric = (e, name) => {
@@ -348,7 +322,6 @@ class AddNewProduct extends Component {
       [name]: e.target.value
     }, () => {
       let freightQty = 0;
-      let storageDuration = 0;
       if (this.state.selectedFreight) {
         if (this.state.selectedFreight.UM == 'CBM')
           freightQty = parseFloat(this.state.packagedWidth * this.state.packagedHeight * this.state.packagedDepth / 1000000);
@@ -359,17 +332,6 @@ class AddNewProduct extends Component {
         else
           freightQty = 0;
         this.setState({freightQty});
-      }
-      if (this.state.selectedStorage) {
-        if (this.state.selectedStorage.UM == 'CBM')
-          storageDuration = parseFloat(this.state.packagedWidth * this.state.packagedHeight * this.state.packagedDepth / 1000000);
-        else if (this.state.selectedStorage.UM == 'KG')
-          storageDuration = parseFloat(this.state.packagedGrams / 1000);
-        else if (this.state.selectedStorage.UM == 'LB')
-          storageDuration = parseFloat(this.state.productGrams / 1000 * 2.20462);
-        else
-          storageDuration = 0;
-        this.setState({storageDuration});
       }
     });
 
@@ -451,18 +413,53 @@ class AddNewProduct extends Component {
     this.setState({showPartsDialog: false});
   }
 
-  addSelectedParts = (partsIndex) => {
-    let {selectedParts, partsList, partsQty, selectedPartsIndex} = this.state;
-    selectedParts = [];
-    partsQty = [];
-    selectedPartsIndex = [];
-    partsIndex.data.map((item) => {
-      selectedParts.push(partsList[item.index]);
-      partsQty.push(0);
-      selectedPartsIndex.push(item.index);
+  addSelectedParts = (ids) => {
+    let {selectedParts, partsList} = this.state;
+    let tempIdx = [];
+    let tempParts = [];
+    tempIdx.push(...ids);
+    tempIdx.map((_id) => {
+      const item = partsList.filter(obj => { return obj._id === _id });
+      const curItem = selectedParts.filter(obj => {return obj._id === _id});
+      let qty = 0;
+      if (curItem.length > 0)
+        qty = curItem[0].partsQty;
+      tempParts.push({ ...item[0], partsQty: qty});
     });
-    this.setState({selectedParts, partsQty, selectedPartsIndex});
+    this.setState({selectedParts: tempParts, selectedPartsIndex: tempIdx});
   }
+
+  removeSelectedPart = (_id) => {
+    this.setState({openConfirmRemoveDialog: true, removeID: _id});
+  }
+
+  handleRemoveSelectedPart = () => {
+    let {removeID, selectedParts, selectedPartsIndex} = this.state;
+    const index = selectedPartsIndex.indexOf(removeID);
+    if (index > -1)
+    {
+      selectedPartsIndex.splice(index, 1);
+    }
+    selectedParts = selectedParts.filter(function(el) { return el._id !== removeID });
+    
+    this.setState({selectedParts, selectedPartsIndex, openConfirmRemoveDialog: false, removeID: null});
+  }
+
+  handleCloseConfirmRemoveDialog = () => {
+    this.setState({openConfirmRemoveDialog: false, removeID: null})
+  }
+  
+  setPage = page => {
+    this.setState({ page });
+  };
+
+  setRowsPerPage = event => {
+    this.setState({ rowsPerPage: event.target.value });
+  };
+
+  handleChangePage = (event, newPage) => {
+    this.setPage(newPage);
+  };
 
   render() {
     let { 
@@ -491,7 +488,6 @@ class AddNewProduct extends Component {
       freightQty,
       partsList,
       selectedParts,
-      partsQty,
       notes,
       storageList,
       fullfillmentList,
@@ -509,6 +505,10 @@ class AddNewProduct extends Component {
       lightboxIndex,
       loading,
       showPartsDialog,
+      selectedPartsIndex,
+      openConfirmRemoveDialog,
+      rowsPerPage,
+      page,
     } = this.state;
     let oem = 0;
     // const classes = useStyles();
@@ -1316,7 +1316,7 @@ class AddNewProduct extends Component {
                       type="number"
                       name="storageDuration"
                       value={storageDuration}
-                      readOnly
+                      onChange={this.handleChange}
                       />
                   )
                 }
@@ -1369,6 +1369,7 @@ class AddNewProduct extends Component {
                 <div className="w-100 overflow-auto" style={{paddingBottom: '250px'}}>
                   <Table style={{border: '1px solid rgba(224, 224, 224, 1)', whiteSpace: "pre"}}>
                       <colgroup>
+                          <col style={{width:'30px'}}/>
                           <col style={{width:'100px'}}/>
                           <col style={{width:'300px'}}/>
                           <col style={{width:'100px'}}/>
@@ -1380,13 +1381,15 @@ class AddNewProduct extends Component {
                       </colgroup>
                       <TableHead>
                           <TableRow>
-                              <TableCell colSpan={8} align='center' className="bg-light-green">
+                              <TableCell colSpan={9} align='center' className="bg-light-green">
                                   PARTS
                               </TableCell>
                           </TableRow>
                           <TableRow>
-                              <TableCell align='center'>
-                                <Button className="py-8" variant="contained" color="primary" onClick={this.openPartsDialog}>Advanced Search</Button>
+                              <TableCell align='center' colSpan={2}>
+                                <Fab size="small" color="primary" aria-label="Add" onClick={this.openPartsDialog}>
+                                  <Icon>add</Icon>
+                                </Fab>
                               </TableCell>
                               <TableCell colSpan={6} align='right'>
                                 OEM:
@@ -1394,14 +1397,15 @@ class AddNewProduct extends Component {
                               <TableCell colSpan={1}>
                                 {
                                   selectedParts.map((part, index) => {
-                                    if (part && part.cost_usd && partsQty[index])
-                                      oem += parseFloat(part.cost_usd) * parseFloat(partsQty[index]);
+                                    if (part && part.cost_usd && part.partsQty)
+                                      oem += parseFloat(part.cost_usd) * parseFloat(part.partsQty);
                                   })
                                 }
-                                $ {oem}
+                                $ {oem.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                               </TableCell>
                           </TableRow>
                           <TableRow>
+                              <TableCell align="center"></TableCell>
                               <TableCell align="center">ID Code</TableCell>
                               <TableCell align="center">Name</TableCell>
                               <TableCell align="center">Type</TableCell>
@@ -1414,9 +1418,18 @@ class AddNewProduct extends Component {
                       </TableHead>
                       <TableBody>
                         {
-                          selectedParts && selectedParts.map((part, index) => {
+                          selectedParts && selectedParts
+                          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                          .map((part, index) => {
                             return (
                               <TableRow key={index}>
+                                <TableCell className="px-10" align="center">
+                                  <Tooltip title={"Remove"}>
+                                      <IconButton onClick={() => this.removeSelectedPart(part._id)}>
+                                          <Icon>cancel</Icon>
+                                      </IconButton>
+                                  </Tooltip>
+                                </TableCell>
                                 <TableCell className="px-10" align="center">
                                   {part.ID}
                                 </TableCell>
@@ -1437,16 +1450,15 @@ class AddNewProduct extends Component {
                               </TableCell>
                               <TableCell className="px-10" align="center">
                                 <TextField
-                                    onChange={(e) => this.handleChangePartsQty(e, index)}
+                                    onChange={(e) => this.handleChangePartsQty(e, part._id)}
                                     InputProps={{
                                       inputComponent: NumberFormatCustom,
                                     }}
-                                    name="productDepth"
-                                    value={partsQty[index]}
+                                    value={part.partsQty}
                                 />
                               </TableCell>
                               <TableCell className="px-10" align="center">
-                                $ {parseFloat(partsQty[index] * part.cost_usd).toFixed(2)}
+                                $ {(parseFloat(part.partsQty * part.cost_usd).toFixed(2)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                               </TableCell>
                             </TableRow>
                             )
@@ -1456,6 +1468,22 @@ class AddNewProduct extends Component {
                           
                       </TableBody>
                   </Table>
+                  <TablePagination
+                    className="px-16"
+                    rowsPerPageOptions={[5, 10, 25]}
+                    component="div"
+                    count={selectedParts.length}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    backIconButtonProps={{
+                      "aria-label": "Previous Page"
+                    }}
+                    nextIconButtonProps={{
+                      "aria-label": "Next Page"
+                    }}
+                    onChangePage={this.handleChangePage}
+                    onChangeRowsPerPage={this.setRowsPerPage}
+                  />
                 </div>
               </Grid>     
             </Grid>
@@ -1476,14 +1504,24 @@ class AddNewProduct extends Component {
             />
           </Snackbar>
 
+          
+          {openConfirmRemoveDialog && (
+            <ConfirmationDialog
+              open={openConfirmRemoveDialog}
+              onConfirmDialogClose={this.handleCloseConfirmRemoveDialog}
+              onYesClick={this.handleRemoveSelectedPart}
+              text="Are you sure to remove it?"
+            />
+          )}
+
           {
             showPartsDialog && (
               <PartsDialog
                 open={showPartsDialog}
                 handleClose={this.handlePartsDialogClose}
                 partsList={partsList}
-                setParts={this.addSelectedParts}
-                rowsSelected={this.state.selectedPartsIndex}
+                addParts={(ids) => this.addSelectedParts(ids)}
+                allSelectedPartsIndex={selectedPartsIndex}
               />
             )
           }

@@ -5,22 +5,27 @@ import {
   DialogActions,
   Button,
   Grid,
-  Tooltip,
-  FormControlLabel,
-  Switch,
+  TableCell,
   DialogContent,
 } from "@material-ui/core";
 import { ValidatorForm, TextValidator } from "react-material-ui-form-validator";
 import MUIDataTable from "mui-datatables";
-import EditIcon from "@material-ui/icons/Create";
-import FilterIcon from "@material-ui/icons/FilterList";
-import IconButton from "@material-ui/core/IconButton";
+import { ConfirmationDialog } from "egret";
+import CustomToolbar from "./CustomToolbar";
+import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
 
-import { generateRandomId } from "utils";
+const columnStyleWithWidth = {
+  width: "600px"
+}
 
 class PartsDialog extends Component {
   state = {
     partsData: [],
+    tableData: [],
+    selectedPartsID: [],
+    selectedRows: [],
+    shouldOpenConfirmationDialog: false,
+    unSelectID: null,
   };
 
   handleChange = (event, source) => {
@@ -30,39 +35,126 @@ class PartsDialog extends Component {
   handleFormSubmit = () => {
   };
 
+  handleDialogClose = () => {
+    this.setState({shouldOpenConfirmationDialog: false, unSelectID: null});
+  }
+
   componentWillMount() {
-    if (this.props.partsList) {
-      let {partsData} = this.state;
+    let {allSelectedPartsIndex, partsList} = this.props;
+    let tempAllSelectedPartsIndex = [];
+    tempAllSelectedPartsIndex.push(...allSelectedPartsIndex);
+    if (partsList) {
+      let {partsData, selectedRows} = this.state;
       partsData = [];
-      this.props.partsList.map((part) => {
+      selectedRows = [];
+      partsList.map((part, index) => {
         partsData.push({
+          _id: part._id,
           ID: part.ID,
           name: part.name,
           type: part.type.name,
           supplier_country: part.supplier_id.country,
           UM: part.UM.short_name,
           u_price: '$' + part.cost_usd,
+          supplier_name: part.supplier_id.name,
         });
+        if (tempAllSelectedPartsIndex.includes(part._id))
+          selectedRows.push(index);
       });
-      this.setState({partsData});
+      this.setState({partsData: partsData, tableData: partsData, selectedPartsID: tempAllSelectedPartsIndex, selectedRows, unSelectID: null}, () => {
+      });
     }
   }
 
-  addSelectedParts = (selectedRows) => {
-    this.props.setParts(selectedRows);
+  addSelectedParts = () => {
+    let {selectedPartsID} = this.state;
+    this.props.addParts(selectedPartsID);
     this.props.handleClose();
-    console.log(selectedRows);
   }
+
+  showSelectedRows = (isAll) => {
+    let {tableData, partsData, selectedPartsID, selectedRows} = this.state;
+    if (isAll == false) {
+      tableData = [];
+      selectedRows = [];
+      selectedPartsID.map((partIndex, i) => {
+        const item = partsData.filter(obj => { return obj._id === partIndex });
+        tableData.push(item[0]);
+        selectedRows.push(i);
+      });
+    }
+    else {
+      tableData = partsData;
+      selectedRows = [];
+      selectedPartsID.map((partIndex) => {
+        const index = partsData.map(function(x) {return x._id; }).indexOf(partIndex);
+        if (index != -1)
+          selectedRows.push(index);
+      });
+    }
+    this.setState({tableData: tableData, selectedRows: selectedRows});
+  }
+
+  handleSelectionChange = (currentRowsSelected, rowsSelected) => {
+
+    let { selectedPartsID, tableData } = this.state;
+    if (currentRowsSelected.length == tableData.length)
+      this.setState({selectedRows: rowsSelected, selectedPartsID: tableData.map(a => a._id)});
+    else if (currentRowsSelected.length == 0) {
+      this.setState({shouldOpenConfirmationDialog: true, unSelectID: -1});
+    }
+    else{
+      if (selectedPartsID.includes(tableData[currentRowsSelected[0].index]._id)) {
+        this.setState({shouldOpenConfirmationDialog: true, unSelectID: currentRowsSelected[0].index});
+      }
+      else {
+        selectedPartsID.push(tableData[currentRowsSelected[0].index]._id);
+        this.setState({selectedRows: rowsSelected, selectedPartsID: selectedPartsID});
+      }
+    }
+  }
+
+  handleConfirmationResponse = () => {
+    let {selectedRows, selectedPartsID, tableData, unSelectID} = this.state;
+    if (unSelectID == -1) {
+      this.setState({selectedRows: [], selectedPartsID: [], shouldOpenConfirmationDialog: false, unSelectID: null});
+    }
+    else {
+      const index = selectedRows.indexOf(unSelectID);
+      if (index > -1) {
+        selectedRows.splice(index, 1);
+        const newIndex = selectedPartsID.indexOf(tableData[unSelectID]._id);
+        if (newIndex > -1) {
+          selectedPartsID.splice(newIndex, 1);
+          this.setState({selectedRows, selectedPartsID, shouldOpenConfirmationDialog: false, unSelectID: null});
+        }
+      }
+    }
+  }
+  
+  getMuiTheme = () => createMuiTheme({
+    overrides: {
+      MUIDataTableBodyCell: {
+        root: {
+          // textAlign: 'center',
+        }
+      },
+      MUIDataTableBodyRow: {
+      }
+    }
+  })
 
   render() {
     let { open, handleClose } = this.props;
+    let { tableData, selectedRows, shouldOpenConfirmationDialog } = this.state;
+
 
     const columns = [
     {
       name: "ID",
       label: "ID Code",
       options: {
-      filter: true,
+      filter: false,
       sort: true,
       }
     },
@@ -70,8 +162,15 @@ class PartsDialog extends Component {
       name: "name",
       label: "Name",
       options: {
-      filter: true,
+      filter: false,
       sort: false,
+      customHeadRender: ({index, ...column}) => {
+        return (
+          <TableCell key={index} style={columnStyleWithWidth}>
+              {column.label}
+          </TableCell>
+        )
+      }
       }
     },
     {
@@ -79,6 +178,14 @@ class PartsDialog extends Component {
       label: "Type",
       options: {
       filter: true,
+      sort: false,
+      }
+    },
+    {
+      name: "supplier_name",
+      label: "Supplier Name",
+      options: {
+      filter: false,
       sort: false,
       }
     },
@@ -94,7 +201,7 @@ class PartsDialog extends Component {
       name: "UM",
       label: "UM",
       options: {
-      filter: true,
+      filter: false,
       sort: false,
       }
     },
@@ -102,7 +209,7 @@ class PartsDialog extends Component {
       name: "u_price",
       label: "UPrice",
       options: {
-      filter: true,
+      filter: false,
       sort: false,
       }
     },
@@ -112,24 +219,18 @@ class PartsDialog extends Component {
       filterType: 'checkbox',
       download: false,
       print: false,
-      rowsSelected: this.props.rowsSelected,
-      customToolbarSelect: selectedRows => (
-        <>
-        <Tooltip title="filter">
-          <Button
-            variant="contained"
-            color="primary"
-            className="m-10"
-            onClick={() => this.addSelectedParts(selectedRows)}
-          >
-            Add Selected
-          </Button>
-        </Tooltip>
-        </>
-      )
+      rowsSelected: selectedRows,
+      selectToolbarPlacement: 'none',
+      responsive: 'stacked',
+      onRowSelectionChange: (currentRowsSelected, allRowsSelected, rowsSelected) => {
+        this.handleSelectionChange(currentRowsSelected, rowsSelected);
+      },
+      customToolbar: () => {
+        return (
+          <CustomToolbar handleClick={this.showSelectedRows} />
+        );
+      }
     };
-
-    let {partsData} = this.state;
 
     return (
       <Dialog onClose={handleClose} open={open} fullWidth={true} maxWidth="lg" scroll={'paper'}>
@@ -137,20 +238,35 @@ class PartsDialog extends Component {
         <DialogContent>
           <ValidatorForm ref="form" onSubmit={this.handleFormSubmit}>
             <Grid className="mb-16" container spacing={4}>
+              <MuiThemeProvider theme={this.getMuiTheme()}>
                 <MUIDataTable
                   title={"Parts List"}
-                  data={partsData}
+                  data={tableData}
                   columns={columns}
                   options={options}
                 />
+              </MuiThemeProvider>
             </Grid>
           </ValidatorForm>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color="primary">
+          <Button onClick={this.addSelectedParts} color="primary">
+            Add
+          </Button>
+          <Button onClick={() => this.props.handleClose()} color="primary">
             Cancel
           </Button>
         </DialogActions>
+        
+          {shouldOpenConfirmationDialog && (
+            <ConfirmationDialog
+              open={shouldOpenConfirmationDialog}
+              onConfirmDialogClose={this.handleDialogClose}
+              onYesClick={this.handleConfirmationResponse}
+              text="Are you sure to unselect?"
+            />
+          )}
+          
       </Dialog>
     );
   }
