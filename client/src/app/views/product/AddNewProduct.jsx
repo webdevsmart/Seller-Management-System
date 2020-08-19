@@ -19,6 +19,7 @@ import {
   Radio
 } from "@material-ui/core";
 import { ValidatorForm, TextValidator } from "react-material-ui-form-validator";
+import Popover from '@material-ui/core/Popover';
 import MenuItem from "@material-ui/core/MenuItem";
 import Typography from "@material-ui/core/Typography";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
@@ -42,6 +43,7 @@ import MySnackbarContentWrapper from "../../components/Snackbar/Snackbar";
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css';
 import moment from 'moment';
+import PartsDialog from "./PartsListDialog";
 
 function NumberFormatPrefixCustom(props) {
   const { inputRef, onChange, ...other } = props;
@@ -154,7 +156,7 @@ class AddNewProduct extends Component {
     packagedGrams: 0,
     selectedFreight: null,
     selectedParts: [],
-    partsIDCode: [],
+    selectedPartsIndex: [],
     partsQty: [],
     notes: "",
     selectedStorage: null,
@@ -182,6 +184,7 @@ class AddNewProduct extends Component {
     lightboxImages: [],
     lightboxIndex: 0,
     loading: false,
+    showPartsDialog: false,
   };
 
   componentDidMount() {
@@ -296,32 +299,16 @@ class AddNewProduct extends Component {
   }
 
   handleSelectVType = (data, index) => {
-    getAllVariationValue(data.value).then((res) => {
-      let { variationQualities } = this.state;
-      variationQualities[index].type = data;
-      variationQualities[index].value = "";
-      variationQualities[index].valueList = res.data.map(item => ({value: item._id, label: item._id}));
-      this.setState({variationQualities});
-    });
-  }
-
-  handleSearchParts = (e, index) => {
-    e.persist();
-    let {partsIDCode, selectedParts} = this.state;
-    partsIDCode[index] = e.target.value;
-    let obj = this.state.partsList.find(o => o.ID === e.target.value.toUpperCase());
-    if (obj)
-      selectedParts[index] = obj;
-    else
-      selectedParts[index] = null;
-    this.setState({selectedParts: selectedParts, partsIDCode: partsIDCode});
-  }
-
-  handleSelectParts = (data, index) => {
-    let {partsIDCode, selectedParts} = this.state;
-    partsIDCode[index] = data.ID;
-    selectedParts[index] = data;
-    this.setState({selectedParts: selectedParts, partsIDCode: partsIDCode});
+    let { variationQualities } = this.state;
+    const check_type = variationQualities.filter(variation => (variation.type === data));
+    if (check_type.length == 0) {
+      getAllVariationValue(data.value).then((res) => {
+        variationQualities[index].type = data;
+        variationQualities[index].value = "";
+        variationQualities[index].valueList = res.data.map(item => ({value: item._id, label: item._id}));
+        this.setState({variationQualities});
+      });
+    }
   }
 
   handleChangePartsQty = (e, index) => {
@@ -330,14 +317,6 @@ class AddNewProduct extends Component {
     this.setState({partsQty});
   }
   
-  addNewPart = () => {
-    let { selectedParts, partsIDCode, partsQty } = this.state;
-    partsIDCode.push("");
-    selectedParts.push(null);
-    partsQty.push(0);
-    this.setState({partsIDCode, selectedParts, partsQty});
-  }
-
   handleSelectFreight = (data) => {
     let freightQty = 0;
     if (data.UM == 'CBM')
@@ -464,6 +443,27 @@ class AddNewProduct extends Component {
     this.setState({lightboxOpen: true, lightboxIndex: index})
   }
 
+  openPartsDialog = () => {
+    this.setState({showPartsDialog: true});
+  }
+
+  handlePartsDialogClose = () => {
+    this.setState({showPartsDialog: false});
+  }
+
+  addSelectedParts = (partsIndex) => {
+    let {selectedParts, partsList, partsQty, selectedPartsIndex} = this.state;
+    selectedParts = [];
+    partsQty = [];
+    selectedPartsIndex = [];
+    partsIndex.data.map((item) => {
+      selectedParts.push(partsList[item.index]);
+      partsQty.push(0);
+      selectedPartsIndex.push(item.index);
+    });
+    this.setState({selectedParts, partsQty, selectedPartsIndex});
+  }
+
   render() {
     let { 
       name,
@@ -492,7 +492,6 @@ class AddNewProduct extends Component {
       partsList,
       selectedParts,
       partsQty,
-      partsIDCode,
       notes,
       storageList,
       fullfillmentList,
@@ -508,7 +507,8 @@ class AddNewProduct extends Component {
       squareFeet,
       lightboxOpen,
       lightboxIndex,
-      loading
+      loading,
+      showPartsDialog,
     } = this.state;
     let oem = 0;
     // const classes = useStyles();
@@ -1380,17 +1380,15 @@ class AddNewProduct extends Component {
                       </colgroup>
                       <TableHead>
                           <TableRow>
-                              <TableCell colSpan={1} align='center' className="bg-light-green">
-                                <Fab color="primary" aria-label="Add" onClick={this.addNewPart}>
-                                  <Icon>add</Icon>
-                                </Fab>
-                              </TableCell>
-                              <TableCell colSpan={7} align='center' className="bg-light-green">
+                              <TableCell colSpan={8} align='center' className="bg-light-green">
                                   PARTS
                               </TableCell>
                           </TableRow>
                           <TableRow>
-                              <TableCell colSpan={7} align='right'>
+                              <TableCell align='center'>
+                                <Button className="py-8" variant="contained" color="primary" onClick={this.openPartsDialog}>Advanced Search</Button>
+                              </TableCell>
+                              <TableCell colSpan={6} align='right'>
                                 OEM:
                               </TableCell>
                               <TableCell colSpan={1}>
@@ -1416,44 +1414,26 @@ class AddNewProduct extends Component {
                       </TableHead>
                       <TableBody>
                         {
-                          partsIDCode && partsIDCode.map((idCode, index) => {
+                          selectedParts && selectedParts.map((part, index) => {
                             return (
                               <TableRow key={index}>
                                 <TableCell className="px-10" align="center">
-                                  <TextValidator
-                                      onChange={(e) => this.handleSearchParts(e, index)}
-                                      type="text"
-                                      readOnly
-                                      value={idCode}
-                                      inputProps={{min: 0, style: { textAlign: 'center' }}}
-                                  />
+                                  {part.ID}
                                 </TableCell>
                                 <TableCell align='center' component="th" scope="row" className="pr-10">
-                                  <CustomOptionSelect
-                                    textFieldProps={{
-                                      InputLabelProps: {
-                                        htmlFor: "react-select-single",
-                                        shrink: true,
-                                      },
-                                      placeholder: "",
-                                    }}
-                                    optionComponent={ CustomOption }
-                                    handleChange={(data) => this.handleSelectParts(data, index)}
-                                    selectedValue={selectedParts[index] && selectedParts[index]}
-                                    options={partsList}
-                                  />
+                                  {part.name}
                                 </TableCell>
                               <TableCell className="px-10" align="center">
-                                {selectedParts[index] && selectedParts[index].type.name}
+                                {part.type.name}
                               </TableCell>
                               <TableCell className="px-10" align="center">
-                                {selectedParts[index] && selectedParts[index].supplier_id.country}
+                                {part.supplier_id.country}
                               </TableCell>
                               <TableCell className="px-10" align="center">
-                                {selectedParts[index] && selectedParts[index].UM.short_name}
+                                {part.UM.short_name}
                               </TableCell>
                               <TableCell className="px-10" align="center">
-                                $ {selectedParts[index] && selectedParts[index].cost_usd}
+                                $ {part.cost_usd}
                               </TableCell>
                               <TableCell className="px-10" align="center">
                                 <TextField
@@ -1466,7 +1446,7 @@ class AddNewProduct extends Component {
                                 />
                               </TableCell>
                               <TableCell className="px-10" align="center">
-                                $ {selectedParts[index] && parseFloat(partsQty[index] * selectedParts[index].cost_usd).toFixed(2)}
+                                $ {parseFloat(partsQty[index] * part.cost_usd).toFixed(2)}
                               </TableCell>
                             </TableRow>
                             )
@@ -1495,6 +1475,19 @@ class AddNewProduct extends Component {
               message={message}
             />
           </Snackbar>
+
+          {
+            showPartsDialog && (
+              <PartsDialog
+                open={showPartsDialog}
+                handleClose={this.handlePartsDialogClose}
+                partsList={partsList}
+                setParts={this.addSelectedParts}
+                rowsSelected={this.state.selectedPartsIndex}
+              />
+            )
+          }
+
           { lightboxOpen && productImages && (
             <Lightbox
               mainSrc={productImages[lightboxIndex].preview}

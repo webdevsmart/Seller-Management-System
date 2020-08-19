@@ -42,6 +42,7 @@ import MySnackbarContentWrapper from "../../components/Snackbar/Snackbar";
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css';
 import moment from 'moment';
+import PartsDialog from "./PartsListDialog";
 
 function NumberFormatPrefixCustom(props) {
   const { inputRef, onChange, ...other } = props;
@@ -152,7 +153,7 @@ class EditProduct extends Component {
     packagedGrams: 0,
     selectedFreight: null,
     selectedParts: [],
-    partsIDCode: [],
+    selectedPartsIndex: [],
     partsQty: [],
     notes: "",
     selectedStorage: null,
@@ -181,6 +182,7 @@ class EditProduct extends Component {
     lightboxImages: [],
     lightboxIndex: 0,
     loading: false,
+    showPartsDialog: false,
   };
 
   componentDidMount() {
@@ -197,80 +199,91 @@ class EditProduct extends Component {
     getAllFreight().then((res) => {
       this.setState({ freightList: res.data.map(item => ({ ...item, value: item._id, label: item.name, costUSD: item.cost_usd, UM: item.UM.short_name})) });
     });
-    getAllParts().then((res) => {
-      this.setState({ partsList: res.data.map(item => ({ ...item, value: item._id, label: item.name })) }, () => {
-      });
-    });
     getAllStorage().then((res) => {
       this.setState({ storageList: res.data.map(item => ({ ...item, value: item._id, label: item.name, UM: item.UM.short_name })) });
     });
     getAllFullfillment().then((res) => {
       this.setState({ fullfillmentList: res.data.map(item => ({ ...item, value: item._id, label: item.name })) });
     });
+    getAllParts().then((res) => {
+      this.setState({ partsList: res.data.map(item => ({ ...item, value: item._id, label: item.name })) }, () => {
 
-    getProductById(this.props.match.params.id).then((res) => {
-      let variationQualities = [];
-      res.data.img.map(async (img, index) => {
-        let blob = await fetch(`/${img.path}`).then(r => r.blob());
-        let newFile = new File([blob], img.file_name);
-        let {productImages} = this.state;
-        productImages.push({
-          _id: img._id,
-          preview: URL.createObjectURL(newFile),
-          file: newFile,
-          date: img.date,
-          fileName: img.file_name,
-          isNew: false,
+        getProductById(this.props.match.params.id).then((res) => {
+          let variationQualities = [];
+          res.data.img.map(async (img, index) => {
+            let blob = await fetch(`/${img.path}`).then(r => r.blob());
+            let newFile = new File([blob], img.file_name);
+            let {productImages} = this.state;
+            productImages.push({
+              _id: img._id,
+              preview: URL.createObjectURL(newFile),
+              file: newFile,
+              date: img.date,
+              fileName: img.file_name,
+              isNew: false,
+            });
+            this.setState({productImages});
+          });
+
+          res.data.variation_qualities.map((item, index) => {
+            variationQualities.push({
+              type: {value: item.type, label: item.type},
+              value: {value: item.value, label: item.value},
+              valueList: []
+            });
+          });
+
+          let selectedParts = [];
+          let selectedPartsIndex = [];
+
+          res.data.parts.map((part) => {
+            const index = this.state.partsList.findIndex(x => x._id === part._id);
+            selectedParts.push({...part, label: part.name, value: part._id});
+            selectedPartsIndex.push(index);
+          });
+
+          let curProduct = {
+            product_image: '/' + res.data.img,
+            name: res.data.name,
+            SKU: res.data.sku,
+            UPC: res.data.upc,
+            ASIN: res.data.asin,
+            variationQualities: variationQualities,
+            selectedParentCategory: { ...res.data.parent_category, value: res.data.parent_category._id, label: res.data.parent_category.category },
+            selectedCategoryList: res.data.categories.map((cat) => {
+              return {...cat, label: cat.category, value: cat._id}
+            }),
+            retailPrice: res.data.retail_price,
+            squareFeet: res.data.square_feet,
+            selectedFFAmazon: { ...res.data.fullfillment_amazon, label: res.data.fullfillment_amazon.name, value: res.data.fullfillment_amazon._id },
+            selectedFFThirdParty: { ...res.data.fullfillment_thirdparty, label: res.data.fullfillment_amazon.name, value: res.data.fullfillment_amazon._id },
+            selectedFFUs: { ...res.data.fullfillment_us, label: res.data.fullfillment_amazon.name, value: res.data.fullfillment_amazon._id },
+            productWidth: res.data.product_width,
+            productHeight: res.data.product_height,
+            productDepth: res.data.product_depth,
+            productGrams: res.data.product_grams,
+            packagedWidth: res.data.packaged_width,
+            packagedHeight: res.data.packaged_height,
+            packagedDepth: res.data.packaged_depth,
+            packagedGrams: res.data.packaged_grams,
+            selectedFreight: { ...res.data.freight, cost_usd: res.data.freight.cost_usd, UM: res.data.freight.UM.short_name, value: res.data.freight._id, label: res.data.freight.name, ID: res.data.freight.ID },
+            freightQty: res.data.freight_qty,
+            selectedStorage: { ...res.data.storage, rate: res.data.storage.rate, UM: res.data.storage.UM.short_name, value: res.data.storage._id, label: res.data.storage.name, ID: res.data.storage.ID },
+            storageDuration: res.data.storage_duration,
+            notes: res.data.notes,
+            selectedPartsIndex: selectedPartsIndex,
+            selectedParts: selectedParts,
+            partsQty: res.data.parts_qty,
+            partsIDCode: res.data.parts.map((part) => {
+              return part.ID
+            }),
+            fullfillmentType: res.data.fullfillment_type
+          }
+          this.setState({ ...curProduct });
         });
-        this.setState({productImages});
       });
-      res.data.variation_qualities.map((item, index) => {
-        variationQualities.push({
-          type: {value: item.type, label: item.type},
-          value: {value: item.value, label: item.value},
-          valueList: []
-        });
-      });
-      let curProduct = {
-        product_image: '/' + res.data.img,
-        name: res.data.name,
-        SKU: res.data.sku,
-        UPC: res.data.upc,
-        ASIN: res.data.asin,
-        variationQualities: variationQualities,
-        selectedParentCategory: { ...res.data.parent_category, value: res.data.parent_category._id, label: res.data.parent_category.category },
-        selectedCategoryList: res.data.categories.map((cat) => {
-          return {...cat, label: cat.category, value: cat._id}
-        }),
-        retailPrice: res.data.retail_price,
-        squareFeet: res.data.square_feet,
-        selectedFFAmazon: { ...res.data.fullfillment_amazon, label: res.data.fullfillment_amazon.name, value: res.data.fullfillment_amazon._id },
-        selectedFFThirdParty: { ...res.data.fullfillment_thirdparty, label: res.data.fullfillment_amazon.name, value: res.data.fullfillment_amazon._id },
-        selectedFFUs: { ...res.data.fullfillment_us, label: res.data.fullfillment_amazon.name, value: res.data.fullfillment_amazon._id },
-        productWidth: res.data.product_width,
-        productHeight: res.data.product_height,
-        productDepth: res.data.product_depth,
-        productGrams: res.data.product_grams,
-        packagedWidth: res.data.packaged_width,
-        packagedHeight: res.data.packaged_height,
-        packagedDepth: res.data.packaged_depth,
-        packagedGrams: res.data.packaged_grams,
-        selectedFreight: { ...res.data.freight, cost_usd: res.data.freight.cost_usd, UM: res.data.freight.UM.short_name, value: res.data.freight._id, label: res.data.freight.name, ID: res.data.freight.ID },
-        freightQty: res.data.freight_qty,
-        selectedStorage: { ...res.data.storage, rate: res.data.storage.rate, UM: res.data.storage.UM.short_name, value: res.data.storage._id, label: res.data.storage.name, ID: res.data.storage.ID },
-        storageDuration: res.data.storage_duration,
-        notes: res.data.notes,
-        partsQty: res.data.parts_qty,
-        selectedParts: res.data.parts.map((part) => {
-          return {...part, label: part.name, value: part._id}
-        }),
-        partsIDCode: res.data.parts.map((part) => {
-          return part.ID
-        }),
-        fullfillmentType: res.data.fullfillment_type
-      }
-      this.setState({ ...curProduct });
     });
+
   }
 
   handleSubmit = (event) => {
@@ -360,32 +373,16 @@ class EditProduct extends Component {
   }
 
   handleSelectVType = (data, index) => {
-    getAllVariationValue(data.value).then((res) => {
-      let { variationQualities } = this.state;
-      variationQualities[index].type = data;
-      variationQualities[index].value = "";
-      variationQualities[index].valueList = res.data.map(item => ({value: item._id, label: item._id}));
-      this.setState({variationQualities});
-    });
-  }
-
-  handleSearchParts = (e, index) => {
-    e.persist();
-    let {partsIDCode, selectedParts} = this.state;
-    partsIDCode[index] = e.target.value;
-    let obj = this.state.partsList.find(o => o.ID === e.target.value.toUpperCase());
-    if (obj)
-      selectedParts[index] = obj;
-    else
-      selectedParts[index] = null;
-    this.setState({selectedParts: selectedParts, partsIDCode: partsIDCode});
-  }
-
-  handleSelectParts = (data, index) => {
-    let {partsIDCode, selectedParts} = this.state;
-    partsIDCode[index] = data.ID;
-    selectedParts[index] = data;
-    this.setState({selectedParts: selectedParts, partsIDCode: partsIDCode});
+    let { variationQualities } = this.state;
+    const check_type = variationQualities.filter(variation => (variation.type === data));
+    if (check_type.length == 0) {
+      getAllVariationValue(data.value).then((res) => {
+        variationQualities[index].type = data;
+        variationQualities[index].value = "";
+        variationQualities[index].valueList = res.data.map(item => ({value: item._id, label: item._id}));
+        this.setState({variationQualities});
+      });
+    }
   }
 
   handleChangePartsQty = (e, index) => {
@@ -394,13 +391,7 @@ class EditProduct extends Component {
     this.setState({partsQty});
   }
   
-  addNewPart = () => {
-    let { selectedParts, partsIDCode, partsQty } = this.state;
-    partsIDCode.push("");
-    selectedParts.push(null);
-    partsQty.push(0);
-    this.setState({partsIDCode, selectedParts, partsQty});
-  }
+
 
   handleSelectFreight = (data) => {
     let freightQty = 0;
@@ -531,6 +522,27 @@ class EditProduct extends Component {
     this.setState({lightboxOpen: true, lightboxIndex: index})
   }
 
+  openPartsDialog = () => {
+    this.setState({showPartsDialog: true});
+  }
+
+  handlePartsDialogClose = () => {
+    this.setState({showPartsDialog: false});
+  }
+
+  addSelectedParts = (partsIndex) => {
+    let {selectedParts, partsList, partsQty, selectedPartsIndex} = this.state;
+    selectedParts = [];
+    partsQty = [];
+    selectedPartsIndex = [];
+    partsIndex.data.map((item) => {
+      selectedParts.push(partsList[item.index]);
+      partsQty.push(0);
+      selectedPartsIndex.push(item.index);
+    });
+    this.setState({selectedParts, partsQty, selectedPartsIndex});
+  }
+
   render() {
     let { 
       name,
@@ -559,7 +571,6 @@ class EditProduct extends Component {
       partsList,
       selectedParts,
       partsQty,
-      partsIDCode,
       notes,
       storageList,
       fullfillmentList,
@@ -575,7 +586,8 @@ class EditProduct extends Component {
       squareFeet,
       lightboxOpen,
       lightboxIndex,
-      loading
+      loading,
+      showPartsDialog,
     } = this.state;
     let oem = 0;
     return (
@@ -1447,17 +1459,15 @@ class EditProduct extends Component {
                       </colgroup>
                       <TableHead>
                           <TableRow>
-                              <TableCell colSpan={1} align='center' className="bg-light-green">
-                                <Fab color="primary" aria-label="Add" onClick={this.addNewPart}>
-                                  <Icon>add</Icon>
-                                </Fab>
-                              </TableCell>
-                              <TableCell colSpan={7} align='center' className="bg-light-green">
+                              <TableCell colSpan={8} align='center' className="bg-light-green">
                                   PARTS
                               </TableCell>
                           </TableRow>
                           <TableRow>
-                              <TableCell colSpan={7} align='right'>
+                              <TableCell align='center'>
+                                <Button className="py-8" variant="contained" color="primary" onClick={this.openPartsDialog}>Advanced Search</Button>
+                              </TableCell>
+                              <TableCell colSpan={6} align='right'>
                                 OEM:
                               </TableCell>
                               <TableCell colSpan={1}>
@@ -1483,44 +1493,26 @@ class EditProduct extends Component {
                       </TableHead>
                       <TableBody>
                         {
-                          partsIDCode && partsIDCode.map((idCode, index) => {
+                          selectedParts && selectedParts.map((part, index) => {
                             return (
                               <TableRow key={index}>
                                 <TableCell className="px-10" align="center">
-                                  <TextValidator
-                                      onChange={(e) => this.handleSearchParts(e, index)}
-                                      type="text"
-                                      readOnly
-                                      value={idCode}
-                                      inputProps={{min: 0, style: { textAlign: 'center' }}}
-                                  />
+                                  {part.ID}
                                 </TableCell>
                                 <TableCell align='center' component="th" scope="row" className="pr-10">
-                                  <CustomOptionSelect
-                                    textFieldProps={{
-                                      InputLabelProps: {
-                                        htmlFor: "react-select-single",
-                                        shrink: true,
-                                      },
-                                      placeholder: "",
-                                    }}
-                                    optionComponent={ CustomOption }
-                                    handleChange={(data) => this.handleSelectParts(data, index)}
-                                    selectedValue={selectedParts[index] && selectedParts[index]}
-                                    options={partsList}
-                                  />
+                                  {part.name}
                                 </TableCell>
                               <TableCell className="px-10" align="center">
-                                {selectedParts[index] && selectedParts[index].type.name}
+                                {part.type.name}
                               </TableCell>
                               <TableCell className="px-10" align="center">
-                                {selectedParts[index] && selectedParts[index].supplier_id.country}
+                                {part.supplier_id.country}
                               </TableCell>
                               <TableCell className="px-10" align="center">
-                                {selectedParts[index] && selectedParts[index].UM.short_name}
+                                {part.UM.short_name}
                               </TableCell>
                               <TableCell className="px-10" align="center">
-                                $ {selectedParts[index] && selectedParts[index].cost_usd}
+                                $ {part.cost_usd}
                               </TableCell>
                               <TableCell className="px-10" align="center">
                                 <TextField
@@ -1533,7 +1525,7 @@ class EditProduct extends Component {
                                 />
                               </TableCell>
                               <TableCell className="px-10" align="center">
-                                $ {selectedParts[index] && parseFloat(partsQty[index] * selectedParts[index].cost_usd).toFixed(2)}
+                                $ {parseFloat(partsQty[index] * part.cost_usd).toFixed(2)}
                               </TableCell>
                             </TableRow>
                             )
@@ -1562,6 +1554,18 @@ class EditProduct extends Component {
               message={message}
             />
           </Snackbar>
+
+          {
+            showPartsDialog && (
+              <PartsDialog
+                open={showPartsDialog}
+                handleClose={this.handlePartsDialogClose}
+                partsList={partsList}
+                setParts={this.addSelectedParts}
+                rowsSelected={this.state.selectedPartsIndex}
+              />
+            )
+          }
           { lightboxOpen && productImages && (
             <Lightbox
               mainSrc={productImages[lightboxIndex].preview}

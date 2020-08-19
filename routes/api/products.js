@@ -93,6 +93,11 @@ router.get("/get", async (req, res) => {
                 }})
                 .populate({ path: 'parts',
                     populate: {
+                      path: 'supplier_id',
+                      model: 'supplier'
+                }})
+                .populate({ path: 'parts',
+                    populate: {
                       path: 'type',
                       model: 'parts_type'
                 }})
