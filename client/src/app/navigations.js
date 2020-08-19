@@ -5,7 +5,7 @@ export const navigations = [
     path: "/product/list",
   },
   {
-    name: "Parts Cost List",
+    name: "Product Cost List",
     icon: "format_list_bulleted",
     path: "/product-cost/list",
   },
@@ -14,7 +14,12 @@ export const navigations = [
     icon: "category",
     path: "/product-category/list",
   },
-  
+  {
+    name: "Parts",
+    iconText: "P",
+    path: "/parts/list",
+  },
+
   {
     name: "Settings",
     icon: "dashboard",
@@ -23,11 +28,6 @@ export const navigations = [
         name: "Product Variations",
         iconText: "V",
         path: "/product-variation/list",
-      },
-      {
-        name: "Parts",
-        iconText: "P",
-        path: "/parts/list",
       },
       {
         name: "Parts UM",
