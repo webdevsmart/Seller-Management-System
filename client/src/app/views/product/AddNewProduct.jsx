@@ -461,6 +461,12 @@ class AddNewProduct extends Component {
     this.setPage(newPage);
   };
 
+  removeSelectedVariation = (index) => {
+    let {variationQualities} = this.state;
+    variationQualities.splice(index, 1);
+    this.setState(variationQualities);
+  }
+
   render() {
     let { 
       name,
@@ -671,6 +677,11 @@ class AddNewProduct extends Component {
               </Grid>
               <Grid item lg={6} md={6} sm={12} xs={12}>
                 <Table style={{border: '1px solid rgba(224, 224, 224, 1)'}}>
+                  <colgroup>
+                      <col style={{width:'50px'}}/>
+                      <col />
+                      <col />
+                  </colgroup>
                   <TableHead>
                     <TableRow>
                       <TableCell align='center' className="bg-light-green">  
@@ -678,11 +689,12 @@ class AddNewProduct extends Component {
                           <Icon>add</Icon>
                         </Fab>
                       </TableCell>
-                      <TableCell align='left' className="bg-light-green">
-                          Variation Qualities
+                      <TableCell colSpan={2} align='center' className="bg-light-green">
+                          <span className="font-weight-500">Variation Qualities</span>
                       </TableCell>
                     </TableRow>
                     <TableRow>
+                      <TableCell align="center"></TableCell>
                       <TableCell align="center">Type</TableCell>
                       <TableCell align="center">Value</TableCell>
                     </TableRow>
@@ -692,6 +704,13 @@ class AddNewProduct extends Component {
                       variationQualities.map((variation, index) => {
                         return (
                             <TableRow key={index}>
+                              <TableCell>
+                                <Tooltip title={"Remove"}>
+                                    <IconButton onClick={() => this.removeSelectedVariation(index)}>
+                                        <Icon>cancel</Icon>
+                                    </IconButton>
+                                </Tooltip>
+                              </TableCell>
                               <TableCell className="px-10">
                                 <CustomSelect
                                   textFieldProps={{

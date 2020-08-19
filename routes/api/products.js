@@ -155,6 +155,9 @@ router.post("/duplicate", async (req, res) => {
         let item = doc;
         item.isNew = true;
         item._id = mongoose.Types.ObjectId();
+        item.sku = 'COPY - ' + item.sku;
+        item.upc = 'COPY - ' + item.upc;
+        item.name = 'COPY - ' + item.name;
         const newProduct = new Product(item);
         newProduct.save()
         .then(item => res.json(item))

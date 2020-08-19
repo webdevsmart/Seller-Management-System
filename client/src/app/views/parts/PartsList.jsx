@@ -130,7 +130,7 @@ class PartsList extends Component {
       name: "id",
       label: "ID",
       options: {
-        filter: true,
+        filter: false,
         sort: true,
       }
       },
@@ -138,7 +138,7 @@ class PartsList extends Component {
         name: "name",
         label: "Name",
         options: {
-          filter: true,
+          filter: false,
           sort: true,
           customHeadRender: ({index, ...column}) => {
             return (
@@ -169,7 +169,7 @@ class PartsList extends Component {
         name: "costUSD",
         label: "Cost USD",
         options: {
-          filter: true,
+          filter: false,
           sort: true,
         }
       },

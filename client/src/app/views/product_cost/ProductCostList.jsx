@@ -2,6 +2,8 @@ import React, { Component } from "react";
 import {
   TableRow,
   TableCell,
+  IconButton,
+  Icon,
   Card
 } from "@material-ui/core";
 import MUIDataTable from "mui-datatables";
@@ -49,6 +51,7 @@ class ProductCostList extends Component {
         let amazonFeeCost = parseFloat(oem) + parseFloat(amazonFee) + freight + storage + parseFloat(item.fullfillment_fba_fee.rate);
         let shopifyFeeCost = oem + freight + storage + shopifyFee + parseFloat(item.fullfillment_fba_fee.rate);
         tmpList.push({
+          _id: item._id,
           sku: item.sku,
           upc: item.upc,
           name: item.name,
@@ -304,7 +307,28 @@ class ProductCostList extends Component {
         },
       }
       },
-
+      {
+        name: "action",
+        label: "Action",
+        options: {
+          filter: false,
+          sort: false,
+          empty: true,
+          customBodyRenderLite: (dataIndex) => {
+            return (
+              <>
+              <IconButton
+                onClick={() =>
+                  this.props.history.push(`/product/edit/${productCostList[dataIndex]._id}`)
+                }
+              >
+                <Icon color="primary">edit</Icon>
+              </IconButton>  
+              </>
+            );
+          }
+        }
+      },
     ];
 
     return (

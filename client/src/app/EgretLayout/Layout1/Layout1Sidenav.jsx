@@ -158,7 +158,7 @@ class Layout1Sidenav extends Component {
       <MuiThemeProvider theme={sidenavTheme}>
         <SidenavTheme theme={sidenavTheme} settings={settings} />
 
-        <div className="sidenav">
+        <div className="sidenav" style={{zIndex: 102}}>
           <div className="sidenav__hold">
             {!this.state.hidden && (
               <Fragment>
