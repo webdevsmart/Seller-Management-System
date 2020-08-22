@@ -101,7 +101,24 @@ class Sidenav extends Component {
           },
         ]
       },
-    
+      {
+        name: "Inventory Warehouse",
+        icon: "favorite",
+        path: "/inventory-warehouse/add",
+        permission: "inventory_warehouse"
+      },
+      {
+        name: "Warehouse Location Types",
+        iconText: "W",
+        path: "/warehouse-location-type/list",
+        permission: "warehouse_location_type"
+      },
+      {
+        name: "Warehouse Locations",
+        iconText: "I",
+        path: "/inventory-warehouse-location/list",
+        permission: "inventory_warehouse_location"
+      },
     ],
   };
 

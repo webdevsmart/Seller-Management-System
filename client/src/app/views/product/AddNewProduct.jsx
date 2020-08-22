@@ -22,17 +22,12 @@ import {
   Radio
 } from "@material-ui/core";
 import { ValidatorForm, TextValidator } from "react-material-ui-form-validator";
-import Popover from '@material-ui/core/Popover';
-import MenuItem from "@material-ui/core/MenuItem";
 import Typography from "@material-ui/core/Typography";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import Snackbar from "@material-ui/core/Snackbar";
-import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import { green } from '@material-ui/core/colors';
 import { Breadcrumb, SimpleCard } from "egret";
 import CustomSelect from "./CustomSelect";
-import CustomOptionSelect from "./CustomOptionSelect";
 import { getAllCategories } from "../product_category/CategoryService";
 import { getAllVariationType, getAllVariationValue } from "../product_variation/VariationService";
 import { getAllFreight } from "../freight/FreightService";

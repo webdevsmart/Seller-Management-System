@@ -17,6 +17,9 @@ const freight = require("./routes/api/freight");
 const storage = require("./routes/api/storage");
 const misc = require("./routes/api/misc");
 const fullfillment = require("./routes/api/fullfillment");
+const warehouse_location_type = require("./routes/api/warehouse_location_type");
+const inventory_warehouse_location = require("./routes/api/inventory_warehouse_location");
+const inventory_warehouse = require("./routes/api/inventory_warehouse");
 
 const app = express();
 
@@ -63,6 +66,9 @@ app.use("/api/freight", freight);
 app.use("/api/storage", storage);
 app.use("/api/misc", misc);
 app.use("/api/fullfillment", fullfillment);
+app.use("/api/warehouse-location-type", warehouse_location_type);
+app.use("/api/inventory-warehouse-location", inventory_warehouse_location);
+app.use("/api/inventory-warehouse", inventory_warehouse);
 
 const port = process.env.PORT || 5000;
 

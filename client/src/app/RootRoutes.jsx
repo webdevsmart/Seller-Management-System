@@ -16,6 +16,9 @@ import fullfillmentRoutes from "./views/fullfillment/FullfillmentRoutes";
 import miscRoutes from "./views/misc/MiscRoutes";
 import sessionRoutes from "./views/sessions/SessionRoutes";
 import userRoutes from "./views/users/UserRoutes";
+import warehouseLocationTypeRoutes from "./views/warehouse_location_type/LocationTypeRoutes";
+import inventoryWarehouseLocationRoutes from "./views/inventory_warehouse_location/LocationRoutes";
+import inventoryWarehouseRoutes from "./views/inventory_warehouse/InventoryWarehouseRoutes";
 
 const redirectRoute = [
   {
@@ -47,6 +50,9 @@ const routes = [
   ...fullfillmentRoutes,
   ...miscRoutes,
   ...userRoutes,
+  ...warehouseLocationTypeRoutes,
+  ...inventoryWarehouseLocationRoutes,
+  ...inventoryWarehouseRoutes,
   ...redirectRoute,
   ...errorRoute,
 ];
