@@ -108,7 +108,7 @@ class Sidenav extends Component {
         permission: "inventory_forecast"
       },
       {
-        name: "Inventory Warehouse",
+        name: "Add Inventory Report",
         icon: "favorite",
         path: "/inventory-warehouse/add",
         permission: "inventory_warehouse"

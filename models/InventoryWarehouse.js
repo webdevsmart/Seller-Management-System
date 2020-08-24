@@ -3,12 +3,16 @@ const Schema = mongoose.Schema;
 
 // Create Schema
 const InventoryWarehouseSchema = new Schema({
+  ID: {
+    type: String,
+    requried: true,
+  },
   warehouse: {
     type: Schema.Types.ObjectId,
     ref: 'inventory_warehouse_location',
     required: true,
   },
-  date: {
+  datetime: {
     type: Date,
     required: true,
   },

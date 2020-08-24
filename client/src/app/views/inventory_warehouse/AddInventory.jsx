@@ -15,22 +15,32 @@ import {
 } from "@material-ui/core";
 import {
   MuiPickersUtilsProvider,
-  KeyboardDatePicker,
+  KeyboardDateTimePicker ,
 } from "@material-ui/pickers";
 import { SimpleCard } from "egret";
 import "date-fns";
 import DateFnsUtils from "@date-io/date-fns";
 import NumberFormat from "react-number-format";
+import MUIDataTable from "mui-datatables";
 import MySnackbarContentWrapper from "../../components/Snackbar/Snackbar";
 import CustomSelect from "../../components/CustomSelect/CustomSelect";
 import {
   getAllLocations,
 } from "../inventory_warehouse_location/LocationService";
 import {
-  getInventoryReport,
   addNewInventoryReport,
 } from "./InventoryWarehouseService";
+import {
+  getAllProducts
+} from "../product/ProductService"
+import { generateRandomId } from "utils";
 import moment from "moment";
+
+const options = {
+  filterType: 'checkbox',
+  customToolbarSelect: () => {},
+  selectableRows: "none",
+};
 
 function NumberFormatCustom(props) {
   const { inputRef, onChange, ...other } = props;
@@ -56,27 +66,43 @@ class LocationList extends Component {
     warehouseOptions: [],
     selectedWarehouse: null,
     selectedLocation: null,
-    date: null,
+    datetime: null,
     reportList: [],
 
-    showLoading: false,
     submitLoading: false,
     messageType: "warning",
     messageOpen: false,
     messageContent: "",
-    rowsPerPage: 10,
-    page: 0,
     submittedInfo: null,
   };
 
   componentDidMount() {
+    this.getInitialState();
     getAllLocations().then((res) => {
       const data = res.data;
       let tmpList = [];
       data.map((item) => {
-        tmpList.push({ ...item, value: item._id, label: item.ID + " - " + item.short_name + " - " + item.country });
+        tmpList.push({ ...item, value: item._id, label: item.ID + " - " + item.short_name + " - " + item.country + " - " + item.type.name });
       });
       this.setState({ warehouseOptions: tmpList });
+    });
+  }
+
+  getInitialState = () => {
+    getAllProducts().then((res) => {
+      let reportList = [];
+      reportList = res.data.map((item) => {
+        return {
+          product_id: item._id,
+          sku: item.sku,
+          upc: item.upc,
+          asin: item.asin,
+          name: item.name,
+          warehouse: 0,
+          warehouse_inbound: 0,
+        }
+      });
+      this.setState({reportList});
     });
   }
 
@@ -98,7 +124,7 @@ class LocationList extends Component {
       return false;
     }
 
-    if (this.state.date == null) {
+    if (this.state.datetime == null) {
       this.setState({
         messageOpen: true,
         messageType: "warning",
@@ -109,73 +135,6 @@ class LocationList extends Component {
     return true;
   };
 
-  showData = () => {
-    if (this.validateSelection() == false) return;
-    this.setState({ showLoading: true });
-    let searchCondition = {
-      date: this.state.date,
-      warehouse: this.state.selectedWarehouse.value,
-    };
-    getInventoryReport(searchCondition)
-      .then((res) => {
-        this.setState({ showLoading: false });
-        let tmpList = [];
-        if (res.data.is_exist == false) {
-          this.setState({ submittedInfo: null });
-          res.data.results.map((item) => {
-            tmpList.push({
-              product_id: item._id,
-              sku: item.sku,
-              upc: item.upc,
-              asin: item.asin,
-              name: item.name,
-              warehouse: 0,
-              warehouse_inbound: 0,
-            });
-          });
-        } else {
-          this.setState({
-            submittedInfo: {
-              userName: res.data.submitted_user,
-              modifiedAt: res.data.modified_at,
-            },
-          });
-          res.data.results.map((item) => {
-            tmpList.push({
-              product_id: item.product_id,
-              sku: item.sku,
-              upc: item.upc,
-              asin: item.asin,
-              name: item.name,
-              warehouse: item.warehouse,
-              warehouse_inbound: item.warehouse_inbound,
-            });
-          });
-        }
-        this.setState({ reportList: tmpList });
-      })
-      .catch((err) => {
-        this.setState({
-          showLoading: false,
-          messageOpen: true,
-          messageType: "warning",
-          messageContent: err.response.data.message,
-        });
-      });
-  };
-
-  setPage = (page) => {
-    this.setState({ page });
-  };
-
-  setRowsPerPage = (event) => {
-    this.setState({ rowsPerPage: event.target.value });
-  };
-
-  handleChangePage = (event, newPage) => {
-    this.setPage(newPage);
-  };
-
   handleInputChange = (event, name, index) => {
     let { reportList } = this.state;
     reportList[index][name] = event.target.value;
@@ -183,6 +142,7 @@ class LocationList extends Component {
   };
 
   handleSubmit = () => {
+    if (this.validateSelection() == false) return;
     let { reportList } = this.state;
     this.setState({ submitLoading: true });
     let newItem = [];
@@ -196,15 +156,14 @@ class LocationList extends Component {
     });
     let postData = {
       items: newItem,
+      ID: 'IR' + generateRandomId(),
       warehouse: this.state.selectedWarehouse.value,
-      date: this.state.date,
+      datetime: this.state.datetime,
       submitted_user: JSON.parse(localStorage.getItem("auth_user"))._id,
     };
     addNewInventoryReport(postData).then((res) => {
-      this.setState({ submittedInfo: {
-        userName: JSON.parse(localStorage.getItem("auth_user")).name,
-        modifiedAt: res.data.modified_at
-      }, submitLoading: false, messageOpen: true, messageType: "success", messageContent: "Submitted successfully!" });
+      this.getInitialState();
+      this.setState({ submitLoading: false, messageOpen: true, messageType: "success", messageContent: "Submitted successfully!" });
     });
   };
 
@@ -213,18 +172,117 @@ class LocationList extends Component {
       reportList,
       warehouseOptions,
       selectedWarehouse,
-      locationList,
-      selectedLocation,
-      date,
-      showLoading,
+      datetime,
       submitLoading,
       messageType,
       messageOpen,
       messageContent,
-      rowsPerPage,
-      page,
       submittedInfo,
     } = this.state;
+
+    const columns = [
+      {
+        name: "sku",
+        label: "SKU",
+        options: {
+          filter: true,
+          sort: true,
+        }
+      },
+      {
+        name: "upc",
+        label: "UPC",
+        options: {
+          filter: true,
+          sort: true,
+        }
+      },
+      {
+        name: "asin",
+        label: "ASIN",
+        options: {
+          filter: true,
+          sort: true,
+        }
+      },
+      {
+        name: "name",
+        label: "Name",
+        options: {
+          filter: true,
+          sort: true,
+        }
+      },
+      {
+        name: "warehouse",
+        label: "Warehouse",
+        options: {
+          filter: false,
+          sort: false,
+          customBodyRenderLite: (dataIndex) => {
+            return (
+              <TextField
+                name="warehouse"
+                onChange={(e) =>
+                  this.handleInputChange(
+                    e,
+                    "warehouse",
+                    dataIndex
+                  )
+                }
+                InputProps={{
+                  inputComponent: NumberFormatCustom,
+                }}
+                value={this.state.reportList[dataIndex].warehouse}
+              />
+            );
+          }
+        }
+      },
+      {
+        name: "warehouse_inbound",
+        label: "Warehouse Inbound",
+        options: {
+          filter: false,
+          sort: false,
+          customBodyRenderLite: (dataIndex) => {
+            return (
+              <TextField
+                name="warehouse_inbound"
+                onChange={(e) =>
+                  this.handleInputChange(
+                    e,
+                    "warehouse_inbound",
+                    dataIndex
+                  )
+                }
+                InputProps={{
+                  inputComponent: NumberFormatCustom,
+                }}
+                value={this.state.reportList[dataIndex].warehouse_inbound}
+              />
+            );
+          }
+        }
+      },
+      {
+        name: "warehouse_inbound",
+        label: "Total In Location",
+        options: {
+          filter: false,
+          sort: false,
+          customBodyRenderLite: (dataIndex) => {
+            return (
+              <>
+              {
+                parseInt(this.state.reportList[dataIndex].warehouse) + parseInt(this.state.reportList[dataIndex].warehouse_inbound)
+              }
+              </>
+            );
+          }
+        }
+      },
+    ];
 
     return (
       <div className="m-sm-30">
@@ -264,37 +322,23 @@ class LocationList extends Component {
             </Grid>
             <Grid item sm={6} xs={12}>
               <MuiPickersUtilsProvider utils={DateFnsUtils}>
-                <KeyboardDatePicker
+                <KeyboardDateTimePicker 
                   className="mb-16 w-100"
                   margin="none"
                   id="mui-pickers-date"
-                  label="Select Date"
+                  label="Select DateTime"
                   inputVariant="standard"
                   type="text"
                   autoOk={true}
-                  value={date}
-                  format={"MMM, dd yyyy"}
-                  onChange={(date) => this.setState({ date: date })}
+                  value={datetime}
+                  onChange={(datetime) => this.setState({ datetime: datetime })}
                   KeyboardButtonProps={{
-                    "aria-label": "change date",
+                    "aria-label": "change date time",
                   }}
                 />
               </MuiPickersUtilsProvider>
             </Grid>
             <Grid item sm={6} xs={12}>
-              <Button
-                type="submit"
-                onClick={this.showData}
-                disabled={showLoading}
-                className="mb-16 mr-32"
-                variant="contained"
-                color="secondary"
-              >
-                Show Data
-                {showLoading && (
-                  <CircularProgress className="ml-10" size={24} />
-                )}
-              </Button>
               <Button
                 className="mb-16"
                 variant="contained"
@@ -309,125 +353,13 @@ class LocationList extends Component {
               </Button>
             </Grid>
             <Grid item sm={12} xs={12}>
-              <div className="w-100 overflow-auto">
-                <Table
-                  style={{
-                    border: "1px solid rgba(224, 224, 224, 1)",
-                    whiteSpace: "pre",
-                  }}
-                >
-                  <TableHead>
-                    <TableRow>
-                      <TableCell
-                        align="center"
-                        colSpan={4}
-                        className="bg-light-green"
-                      >
-                        Product
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        colSpan={3}
-                        className="bg-primary"
-                      ></TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell align="center">SKU</TableCell>
-                      <TableCell align="center">UPC</TableCell>
-                      <TableCell align="center">ASIN</TableCell>
-                      <TableCell align="center">Name</TableCell>
-                      <TableCell align="center">Warehouse</TableCell>
-                      <TableCell align="center">Warehouse Inbound</TableCell>
-                      <TableCell align="center">Total In Location</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {reportList &&
-                      reportList
-                        .slice(
-                          page * rowsPerPage,
-                          page * rowsPerPage + rowsPerPage
-                        )
-                        .map((item, index) => {
-                          return (
-                            <TableRow key={index}>
-                              <TableCell className="px-10" align="center">
-                                {item.sku}
-                              </TableCell>
-                              <TableCell className="px-10" align="center">
-                                {item.upc}
-                              </TableCell>
-                              <TableCell align="center" className="px-10">
-                                {item.asin}
-                              </TableCell>
-                              <TableCell className="px-10" align="center">
-                                {item.name}
-                              </TableCell>
-                              <TableCell className="px-10" align="center">
-                                <TextField
-                                  onChange={(e) =>
-                                    this.handleInputChange(
-                                      e,
-                                      "warehouse",
-                                      index
-                                    )
-                                  }
-                                  InputProps={{
-                                    inputComponent: NumberFormatCustom,
-                                  }}
-                                  value={item.warehouse}
-                                />
-                              </TableCell>
-                              <TableCell className="px-10" align="center">
-                                <TextField
-                                  name="warehouse_inbound"
-                                  onChange={(e) =>
-                                    this.handleInputChange(
-                                      e,
-                                      "warehouse_inbound",
-                                      index
-                                    )
-                                  }
-                                  InputProps={{
-                                    inputComponent: NumberFormatCustom,
-                                  }}
-                                  value={item.warehouse_inbound}
-                                />
-                              </TableCell>
-                              <TableCell className="px-10" align="center">
-                                <TextField
-                                  InputProps={{
-                                    inputComponent: NumberFormatCustom,
-                                  }}
-                                  readOnly
-                                  value={
-                                    parseFloat(item.warehouse) +
-                                    parseFloat(item.warehouse_inbound)
-                                  }
-                                />
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                  </TableBody>
-                </Table>
-                <TablePagination
-                  className="px-16"
-                  rowsPerPageOptions={[5, 10, 25]}
-                  component="div"
-                  count={reportList.length}
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  backIconButtonProps={{
-                    "aria-label": "Previous Page",
-                  }}
-                  nextIconButtonProps={{
-                    "aria-label": "Next Page",
-                  }}
-                  onChangePage={this.handleChangePage}
-                  onChangeRowsPerPage={this.setRowsPerPage}
-                />
-              </div>
+              <MUIDataTable
+                className="pl-24 pr-24"
+                title={"Report"}
+                data={reportList}
+                columns={columns}
+                options={options}
+              />
             </Grid>
           </Grid>
         </SimpleCard>

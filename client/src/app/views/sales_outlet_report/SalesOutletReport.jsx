@@ -5,12 +5,6 @@ import {
   Button,
   Snackbar,
   CircularProgress,
-  TablePagination,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
   TextField,
 } from "@material-ui/core";
 import {
@@ -19,6 +13,7 @@ import {
 } from "@material-ui/pickers";
 import { SimpleCard } from "egret";
 import "date-fns";
+import MUIDataTable from "mui-datatables";
 import DateFnsUtils from "@date-io/date-fns";
 import NumberFormat from "react-number-format";
 import MySnackbarContentWrapper from "../../components/Snackbar/Snackbar";
@@ -28,10 +23,17 @@ import {
   getSalesOutletLocationListByName,
 } from "../sales_outlet/SalesOutletService";
 import {
-  getSalesOutletReport,
   addNewSalesOutletReport,
 } from "./SalesOutletReportService";
+import { getAllProducts } from "../product/ProductService";
+import { generateRandomId } from "utils";
 import moment from "moment";
+
+const options = {
+  filterType: "checkbox",
+  customToolbarSelect: () => {},
+  selectableRows: "none",
+};
 
 function NumberFormatCustom(props) {
   const { inputRef, onChange, ...other } = props;
@@ -72,20 +74,43 @@ class SalesOutletReport extends Component {
   };
 
   componentDidMount() {
+    this.getInitialState();
     getSalesOutletNameList().then((res) => {
       let salesOutletList = res.data.map((item) => {
-        return { value: item._id, label: 'Sales Outlet Report - ' + item._id };
+        return { value: item._id, label: "Sales Outlet Report - " + item._id };
       });
       this.setState({ salesOutletList });
     });
   }
+
+  getInitialState = () => {
+    getAllProducts().then((res) => {
+      let reportList = [];
+      reportList = res.data.map((item) => {
+        return {
+          product_id: item._id,
+          sku: item.sku,
+          upc: item.upc,
+          asin: item.asin,
+          name: item.name,
+          sold: 0,
+          returned: 0,
+          refunded: 0,
+        };
+      });
+      this.setState({ reportList });
+    });
+  };
 
   closeMessage = () => {
     this.setState({ messageOpen: false });
   };
 
   validateSelection = () => {
-    if (this.state.selectedSalesOutlet == null || this.state.selectedLocation == null) {
+    if (
+      this.state.selectedSalesOutlet == null ||
+      this.state.selectedLocation == null
+    ) {
       this.setState({
         messageOpen: true,
         messageType: "warning",
@@ -105,75 +130,6 @@ class SalesOutletReport extends Component {
     return true;
   };
 
-  showData = () => {
-    if (this.validateSelection() == false) return;
-    this.setState({ showLoading: true });
-    let searchCondition = {
-      date: this.state.date,
-      salesOutlet: this.state.selectedLocation.value,
-    };
-    getSalesOutletReport(searchCondition)
-      .then((res) => {
-        this.setState({ showLoading: false });
-        let tmpList = [];
-        if (res.data.is_exist == false) {
-          this.setState({ submittedInfo: null });
-          res.data.results.map((item) => {
-            tmpList.push({
-              product_id: item._id,
-              sku: item.sku,
-              upc: item.upc,
-              asin: item.asin,
-              name: item.name,
-              sold: 0,
-              returned: 0,
-              refunded: 0,
-            });
-          });
-        } else {
-          this.setState({
-            submittedInfo: {
-              userName: res.data.submitted_user,
-              modifiedAt: res.data.modified_at,
-            },
-          });
-          res.data.results.map((item) => {
-            tmpList.push({
-              product_id: item.product_id,
-              sku: item.sku,
-              upc: item.upc,
-              asin: item.asin,
-              name: item.name,
-              sold: item.sold,
-              returned: item.returned,
-              refunded: item.refunded,
-            });
-          });
-        }
-        this.setState({ reportList: tmpList });
-      })
-      .catch((err) => {
-        this.setState({
-          showLoading: false,
-          messageOpen: true,
-          messageType: "warning",
-          messageContent: err.response.data.message,
-        });
-      });
-  };
-
-  setPage = (page) => {
-    this.setState({ page });
-  };
-
-  setRowsPerPage = (event) => {
-    this.setState({ rowsPerPage: event.target.value });
-  };
-
-  handleChangePage = (event, newPage) => {
-    this.setPage(newPage);
-  };
-  
   handleInputChange = (event, name, index) => {
     let { reportList } = this.state;
     reportList[index][name] = event.target.value;
@@ -181,14 +137,17 @@ class SalesOutletReport extends Component {
   };
 
   handleSelectSalesOutlet = (data) => {
-    this.setState({selectedSalesOutlet: data});
-    getSalesOutletLocationListByName({name: data.value}).then((res) => {
-        let locationList = res.data.map((item) => { return { ...item, value: item._id, label: item.location } } );
-        this.setState({locationList});
+    this.setState({ selectedSalesOutlet: data });
+    getSalesOutletLocationListByName({ name: data.value }).then((res) => {
+      let locationList = res.data.map((item) => {
+        return { ...item, value: item._id, label: item.location };
+      });
+      this.setState({ locationList });
     });
-  }
+  };
 
   handleSubmit = () => {
+    if (this.validateSelection() == false) return;
     let { reportList } = this.state;
     this.setState({ submitLoading: true });
     let newItem = [];
@@ -201,16 +160,20 @@ class SalesOutletReport extends Component {
       });
     });
     let postData = {
+      ID: "SR" + generateRandomId(),
       items: newItem,
       sales_outlet: this.state.selectedLocation.value,
       date: this.state.date,
       submitted_user: JSON.parse(localStorage.getItem("auth_user"))._id,
     };
     addNewSalesOutletReport(postData).then((res) => {
-      this.setState({ submittedInfo: {
-        userName: JSON.parse(localStorage.getItem("auth_user")).name,
-        modifiedAt: res.data.modified_at
-      }, submitLoading: false, messageOpen: true, messageType: "success", messageContent: "Submitted successfully!" });
+      this.setState({
+        submitLoading: false,
+        messageOpen: true,
+        messageType: "success",
+        messageContent: "Submitted successfully!",
+      });
+      this.getInitialState();
     });
   };
 
@@ -222,15 +185,125 @@ class SalesOutletReport extends Component {
       locationList,
       selectedLocation,
       date,
-      showLoading,
       submitLoading,
       messageType,
       messageOpen,
       messageContent,
-      rowsPerPage,
-      page,
       submittedInfo,
     } = this.state;
+
+    const columns = [
+      {
+        name: "sku",
+        label: "SKU",
+        options: {
+          filter: true,
+          sort: true,
+        },
+      },
+      {
+        name: "upc",
+        label: "UPC",
+        options: {
+          filter: true,
+          sort: true,
+        },
+      },
+      {
+        name: "asin",
+        label: "ASIN",
+        options: {
+          filter: true,
+          sort: true,
+        },
+      },
+      {
+        name: "name",
+        label: "Name",
+        options: {
+          filter: true,
+          sort: true,
+        },
+      },
+      {
+        name: "sold",
+        label: "SOLD",
+        options: {
+          filter: false,
+          sort: false,
+          customBodyRenderLite: (dataIndex) => {
+            return (
+              <TextField
+                onChange={(e) => this.handleInputChange(e, "sold", dataIndex)}
+                InputProps={{
+                  inputComponent: NumberFormatCustom,
+                }}
+                value={this.state.reportList[dataIndex].sold}
+              />
+            );
+          },
+        },
+      },
+      {
+        name: "returned",
+        label: "RETURNED",
+        options: {
+          filter: false,
+          sort: false,
+          customBodyRenderLite: (dataIndex) => {
+            return (
+              <TextField
+                onChange={(e) =>
+                  this.handleInputChange(e, "returned", dataIndex)
+                }
+                InputProps={{
+                  inputComponent: NumberFormatCustom,
+                }}
+                value={this.state.reportList[dataIndex].returned}
+              />
+            );
+          },
+        },
+      },
+      {
+        name: "refunded",
+        label: "REFUNDED",
+        options: {
+          filter: false,
+          sort: false,
+          customBodyRenderLite: (dataIndex) => {
+            return (
+              <TextField
+                onChange={(e) =>
+                  this.handleInputChange(e, "refunded", dataIndex)
+                }
+                InputProps={{
+                  inputComponent: NumberFormatCustom,
+                }}
+                value={this.state.reportList[dataIndex].refunded}
+              />
+            );
+          },
+        },
+      },
+      {
+        name: "",
+        label: "Total",
+        options: {
+          filter: false,
+          sort: false,
+          customBodyRenderLite: (dataIndex) => {
+            return (
+              <>
+                {parseInt(this.state.reportList[dataIndex].sold) +
+                  parseInt(this.state.reportList[dataIndex].returned) +
+                  parseInt(this.state.reportList[dataIndex].refunded)}
+              </>
+            );
+          },
+        },
+      },
+    ];
 
     return (
       <div className="m-sm-30">
@@ -243,7 +316,9 @@ class SalesOutletReport extends Component {
               <div className="pr-16">
                 <p className="m-0 text-black">
                   Last Submitted{" "}
-                  <span className="text-error">{moment(submittedInfo.modifiedAt).format("LLLL")}</span>{" "}
+                  <span className="text-error">
+                    {moment(submittedInfo.modifiedAt).format("LLLL")}
+                  </span>{" "}
                   by{" "}
                   <span className="font-weight-500 text-primary">
                     {submittedInfo.userName}
@@ -279,7 +354,9 @@ class SalesOutletReport extends Component {
                   placeholder: "",
                 }}
                 options={locationList}
-                handleChange={(data) => this.setState({selectedLocation: data})}
+                handleChange={(data) =>
+                  this.setState({ selectedLocation: data })
+                }
                 selectedValue={selectedLocation}
               />
             </Grid>
@@ -305,19 +382,6 @@ class SalesOutletReport extends Component {
             </Grid>
             <Grid item sm={6} xs={12}>
               <Button
-                type="submit"
-                onClick={this.showData}
-                disabled={showLoading}
-                className="mb-16 mr-32"
-                variant="contained"
-                color="secondary"
-              >
-                Show Data
-                {showLoading && (
-                  <CircularProgress className="ml-10" size={24} />
-                )}
-              </Button>
-              <Button
                 className="mb-16"
                 variant="contained"
                 color="primary"
@@ -331,143 +395,13 @@ class SalesOutletReport extends Component {
               </Button>
             </Grid>
             <Grid item sm={12} xs={12}>
-              <div className="w-100 overflow-auto">
-                <Table
-                  style={{
-                    border: "1px solid rgba(224, 224, 224, 1)",
-                    whiteSpace: "pre",
-                  }}
-                >
-                  <TableHead>
-                    <TableRow>
-                      <TableCell
-                        align="center"
-                        colSpan={4}
-                        className="bg-light-green"
-                      >
-                        Product
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        colSpan={4}
-                        className="bg-primary"
-                      ></TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell align="center">SKU</TableCell>
-                      <TableCell align="center">UPC</TableCell>
-                      <TableCell align="center">ASIN</TableCell>
-                      <TableCell align="center">Name</TableCell>
-                      <TableCell align="center">SOLD</TableCell>
-                      <TableCell align="center">RETURNED</TableCell>
-                      <TableCell align="center">REFUNDED</TableCell>
-                      <TableCell align="center">Total</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {reportList &&
-                      reportList
-                        .slice(
-                          page * rowsPerPage,
-                          page * rowsPerPage + rowsPerPage
-                        )
-                        .map((item, index) => {
-                          return (
-                            <TableRow key={index}>
-                              <TableCell className="px-10" align="center">
-                                {item.sku}
-                              </TableCell>
-                              <TableCell className="px-10" align="center">
-                                {item.upc}
-                              </TableCell>
-                              <TableCell align="center" className="px-10">
-                                {item.asin}
-                              </TableCell>
-                              <TableCell className="px-10" align="center">
-                                {item.name}
-                              </TableCell>
-                              <TableCell className="px-10" align="center">
-                                <TextField
-                                  onChange={(e) =>
-                                    this.handleInputChange(
-                                      e,
-                                      "sold",
-                                      index
-                                    )
-                                  }
-                                  InputProps={{
-                                    inputComponent: NumberFormatCustom,
-                                  }}
-                                  value={item.sold}
-                                />
-                              </TableCell>
-                              <TableCell className="px-10" align="center">
-                                <TextField
-                                  name="returned"
-                                  onChange={(e) =>
-                                    this.handleInputChange(
-                                      e,
-                                      "returned",
-                                      index
-                                    )
-                                  }
-                                  InputProps={{
-                                    inputComponent: NumberFormatCustom,
-                                  }}
-                                  value={item.returned}
-                                />
-                              </TableCell>
-                              <TableCell className="px-10" align="center">
-                                <TextField
-                                  name="refunded"
-                                  onChange={(e) =>
-                                    this.handleInputChange(
-                                      e,
-                                      "refunded",
-                                      index
-                                    )
-                                  }
-                                  InputProps={{
-                                    inputComponent: NumberFormatCustom,
-                                  }}
-                                  value={item.refunded}
-                                />
-                              </TableCell>
-                              <TableCell className="px-10" align="center">
-                                <TextField
-                                  InputProps={{
-                                    inputComponent: NumberFormatCustom,
-                                  }}
-                                  readOnly
-                                  value={
-                                    parseFloat(item.sold) +
-                                    parseFloat(item.returned) + 
-                                    parseFloat(item.refunded)
-                                  }
-                                />
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                  </TableBody>
-                </Table>
-                <TablePagination
-                  className="px-16"
-                  rowsPerPageOptions={[5, 10, 25]}
-                  component="div"
-                  count={reportList.length}
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  backIconButtonProps={{
-                    "aria-label": "Previous Page",
-                  }}
-                  nextIconButtonProps={{
-                    "aria-label": "Next Page",
-                  }}
-                  onChangePage={this.handleChangePage}
-                  onChangeRowsPerPage={this.setRowsPerPage}
-                />
-              </div>
+              <MUIDataTable
+                className="pl-24 pr-24"
+                title={"Report"}
+                data={reportList}
+                columns={columns}
+                options={options}
+              />
             </Grid>
           </Grid>
         </SimpleCard>

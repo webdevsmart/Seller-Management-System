@@ -3,6 +3,10 @@ const Schema = mongoose.Schema;
 
 // Create Schema
 const SalesOutletReportSchema = new Schema({
+  ID: {
+    type: String,
+    required: true,
+  },
   date: {
     type: String,
     required: true
