@@ -3,12 +3,9 @@ const Schema = mongoose.Schema;
 
 // Create Schema
 const InventoryWarehouseSchema = new Schema({
-  warehouse_name: {
-    type: String,
-    required: true,
-  },
-  country: {
-    type: String,
+  warehouse: {
+    type: Schema.Types.ObjectId,
+    ref: 'inventory_warehouse_location',
     required: true,
   },
   date: {

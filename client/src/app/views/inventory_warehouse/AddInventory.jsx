@@ -24,8 +24,7 @@ import NumberFormat from "react-number-format";
 import MySnackbarContentWrapper from "../../components/Snackbar/Snackbar";
 import CustomSelect from "../../components/CustomSelect/CustomSelect";
 import {
-  getLocationNameList,
-  getLocationLocationList,
+  getAllLocations,
 } from "../inventory_warehouse_location/LocationService";
 import {
   getInventoryReport,
@@ -54,9 +53,8 @@ function NumberFormatCustom(props) {
 
 class LocationList extends Component {
   state = {
-    warehouseNameOptions: [],
-    selectedWarehouseName: null,
-    locationList: [],
+    warehouseOptions: [],
+    selectedWarehouse: null,
     selectedLocation: null,
     date: null,
     reportList: [],
@@ -72,30 +70,18 @@ class LocationList extends Component {
   };
 
   componentDidMount() {
-    getLocationNameList().then((res) => {
+    getAllLocations().then((res) => {
       const data = res.data;
       let tmpList = [];
       data.map((item) => {
-        tmpList.push({ value: item._id, label: item._id });
+        tmpList.push({ ...item, value: item._id, label: item.ID + " - " + item.short_name + " - " + item.country });
       });
-      this.setState({ warehouseNameOptions: tmpList });
+      this.setState({ warehouseOptions: tmpList });
     });
   }
 
-  handleSelectWarehouseName = (data) => {
-    this.setState({ selectedWarehouseName: data });
-    getLocationLocationList({ name: data.value }).then((res) => {
-      const data = res.data;
-      let tmpList = [];
-      data.map((item) => {
-        tmpList.push({ value: item._id, label: item._id });
-      });
-      this.setState({ locationList: tmpList });
-    });
-  };
-
-  handleSelectWarehouseLocation = (data) => {
-    this.setState({ selectedLocation: data });
+  handleSelectWarehouse = (data) => {
+    this.setState({ selectedWarehouse: data });
   };
 
   closeMessage = () => {
@@ -103,20 +89,11 @@ class LocationList extends Component {
   };
 
   validateSelection = () => {
-    if (this.state.selectedWarehouseName == null) {
+    if (this.state.selectedWarehouse == null) {
       this.setState({
         messageOpen: true,
         messageType: "warning",
         messageContent: "Please select warehouse name!",
-      });
-      return false;
-    }
-
-    if (this.state.selectedLocation == null) {
-      this.setState({
-        messageOpen: true,
-        messageType: "warning",
-        messageContent: "Please select location/country!",
       });
       return false;
     }
@@ -137,8 +114,7 @@ class LocationList extends Component {
     this.setState({ showLoading: true });
     let searchCondition = {
       date: this.state.date,
-      warehouse_name: this.state.selectedWarehouseName.label,
-      location: this.state.selectedLocation.label,
+      warehouse: this.state.selectedWarehouse.value,
     };
     getInventoryReport(searchCondition)
       .then((res) => {
@@ -220,8 +196,7 @@ class LocationList extends Component {
     });
     let postData = {
       items: newItem,
-      warehouse_name: this.state.selectedWarehouseName.label,
-      country: this.state.selectedLocation.label,
+      warehouse: this.state.selectedWarehouse.value,
       date: this.state.date,
       submitted_user: JSON.parse(localStorage.getItem("auth_user"))._id,
     };
@@ -236,8 +211,8 @@ class LocationList extends Component {
   render() {
     let {
       reportList,
-      warehouseNameOptions,
-      selectedWarehouseName,
+      warehouseOptions,
+      selectedWarehouse,
       locationList,
       selectedLocation,
       date,
@@ -272,7 +247,7 @@ class LocationList extends Component {
             </Card>
           )}
           <Grid container spacing={4} style={{ marginBottom: "250px" }}>
-            <Grid item sm={6} xs={12}>
+            <Grid item sm={12} xs={12}>
               <CustomSelect
                 textFieldProps={{
                   label: "Select Warehouse by Name",
@@ -282,26 +257,9 @@ class LocationList extends Component {
                   },
                   placeholder: "",
                 }}
-                options={warehouseNameOptions}
-                handleChange={(data) => this.handleSelectWarehouseName(data)}
-                selectedValue={selectedWarehouseName}
-              />
-            </Grid>
-            <Grid item sm={6} xs={12}>
-              <CustomSelect
-                textFieldProps={{
-                  label: "Select Location / Country",
-                  InputLabelProps: {
-                    htmlFor: "react-select-single",
-                    shrink: true,
-                  },
-                  placeholder: "",
-                }}
-                options={locationList}
-                handleChange={(data) =>
-                  this.handleSelectWarehouseLocation(data)
-                }
-                selectedValue={selectedLocation}
+                options={warehouseOptions}
+                handleChange={(data) => this.handleSelectWarehouse(data)}
+                selectedValue={selectedWarehouse}
               />
             </Grid>
             <Grid item sm={6} xs={12}>

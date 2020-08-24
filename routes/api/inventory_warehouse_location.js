@@ -59,6 +59,7 @@ router.post("/update", async (req, res) => {
       short_name: req.body.short_name,
       type: req.body.type,
       country: req.body.country,
+      region: req.body.region,
     },
   };
   InventoryWarehouseLocation.updateOne(query, newvalues, function (

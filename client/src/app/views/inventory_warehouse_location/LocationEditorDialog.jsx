@@ -17,6 +17,7 @@ class LocationEditorDialog extends Component {
     short_name: "",
     name: "",
     country: "",
+    region: "",
     selected_country: null,
     type: null,
     selected_type: null,
@@ -78,6 +79,7 @@ class LocationEditorDialog extends Component {
         this.setState({
             ID: "",
             short_name: "",
+            region: "",
             name: "",
             country: "",
             selected_country: null,
@@ -88,7 +90,7 @@ class LocationEditorDialog extends Component {
   }
 
   render() {
-    let { name, short_name, selected_country, selected_type, typeList } = this.state;
+    let { name, short_name, selected_country, selected_type, typeList, region } = this.state;
     let { open, handleClose } = this.props;
 
     return (
@@ -134,6 +136,18 @@ class LocationEditorDialog extends Component {
                   options={countries}
                   handleChange={(data) => this.handleSelectCountry(data)}
                   selectedValue={selected_country}
+                />
+              </Grid>
+              <Grid item sm={6} xs={12}>
+                <TextValidator
+                  className="w-100 mb-16"
+                  label="Region"
+                  onChange={this.handleChange}
+                  type="text"
+                  name="region"
+                  value={region}
+                  validators={["required"]}
+                  errorMessages={["this field is required"]}
                 />
               </Grid>
               <Grid item sm={6} xs={12}>

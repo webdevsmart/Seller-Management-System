@@ -19,6 +19,10 @@ const InventoryWarehouseLocationSchema = new Schema({
     type: String,
     required: true,
   },
+  region: {
+    type: String,
+    required: true,
+  },
   type: {
     type: Schema.Types.ObjectId,
     ref: 'warehouse_location_type',

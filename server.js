@@ -20,6 +20,10 @@ const fullfillment = require("./routes/api/fullfillment");
 const warehouse_location_type = require("./routes/api/warehouse_location_type");
 const inventory_warehouse_location = require("./routes/api/inventory_warehouse_location");
 const inventory_warehouse = require("./routes/api/inventory_warehouse");
+const inventory_forecast = require("./routes/api/inventory_forecast");
+const sales_outlet = require("./routes/api/sales_outlet");
+const sales_outlet_report = require("./routes/api/sales_outlet_report");
+const sales_report_summary = require("./routes/api/sales_report_summary");
 
 const app = express();
 
@@ -69,6 +73,10 @@ app.use("/api/fullfillment", fullfillment);
 app.use("/api/warehouse-location-type", warehouse_location_type);
 app.use("/api/inventory-warehouse-location", inventory_warehouse_location);
 app.use("/api/inventory-warehouse", inventory_warehouse);
+app.use("/api/inventory-forecast", inventory_forecast);
+app.use("/api/sales-outlet", sales_outlet);
+app.use("/api/sales-outlet-report", sales_outlet_report);
+app.use("/api/sales-report-summary", sales_report_summary);
 
 const port = process.env.PORT || 5000;
 

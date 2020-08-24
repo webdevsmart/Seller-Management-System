@@ -102,6 +102,12 @@ class Sidenav extends Component {
         ]
       },
       {
+        name: "Inventory Forecast",
+        icon: "favorite",
+        path: "/inventory-forecast/index",
+        permission: "inventory_forecast"
+      },
+      {
         name: "Inventory Warehouse",
         icon: "favorite",
         path: "/inventory-warehouse/add",
@@ -118,6 +124,24 @@ class Sidenav extends Component {
         iconText: "I",
         path: "/inventory-warehouse-location/list",
         permission: "inventory_warehouse_location"
+      },
+      {
+        name: "Sales Outlet",
+        iconText: "S",
+        path: "/sales-outlet/list",
+        permission: "sales_outlet"
+      },
+      {
+        name: "Sales Outlet Report",
+        iconText: "R",
+        path: "/sales-outlet-report/index",
+        permission: "sales_outlet_report"
+      },
+      {
+        name: "Sales Report Summary",
+        iconText: "S",
+        path: "/sales-report-summary/index",
+        permission: "sales_report_summary"
       },
     ],
   };

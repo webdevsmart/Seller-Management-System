@@ -1,10 +1,5 @@
 import React, { Component } from "react";
-import {
-  IconButton,
-  Icon,
-  Button,
-  Card
-} from "@material-ui/core";
+import { IconButton, Icon, Button, Card } from "@material-ui/core";
 import MUIDataTable from "mui-datatables";
 import Snackbar from "@material-ui/core/Snackbar";
 import { Breadcrumb, ConfirmationDialog } from "egret";
@@ -13,9 +8,9 @@ import { getAllLocations, deleteLocation } from "./LocationService";
 import MySnackbarContentWrapper from "../../components/Snackbar/Snackbar";
 
 const options = {
-  filterType: 'checkbox',
+  filterType: "checkbox",
   customToolbarSelect: () => {},
-  selectableRows: "none"
+  selectableRows: "none",
 };
 
 class LocationList extends Component {
@@ -27,11 +22,11 @@ class LocationList extends Component {
     warningMessage: "",
   };
 
-  setPage = page => {
+  setPage = (page) => {
     this.setState({ page });
   };
 
-  setRowsPerPage = event => {
+  setRowsPerPage = (event) => {
     this.setState({ rowsPerPage: event.target.value });
   };
 
@@ -42,26 +37,28 @@ class LocationList extends Component {
   handleDialogClose = () => {
     this.setState({
       shouldOpenEditorDialog: false,
-      shouldOpenConfirmationDialog: false
+      shouldOpenConfirmationDialog: false,
     });
     this.updatePageData();
   };
 
-  handleDeleteLocation = mid => {
+  handleDeleteLocation = (mid) => {
     this.setState({
       mid,
-      shouldOpenConfirmationDialog: true
+      shouldOpenConfirmationDialog: true,
     });
   };
 
   handleConfirmationResponse = () => {
-    deleteLocation(this.state.mid).then((res) => {
-      this.handleDialogClose();
-    }).catch((error) => {
-      this.setState({warningMessage: error.response.data.message});
-      this.setState({warningOpen: true});
-      this.handleDialogClose();
-    });
+    deleteLocation(this.state.mid)
+      .then((res) => {
+        this.handleDialogClose();
+      })
+      .catch((error) => {
+        this.setState({ warningMessage: error.response.data.message });
+        this.setState({ warningOpen: true });
+        this.handleDialogClose();
+      });
   };
 
   componentDidMount() {
@@ -72,15 +69,23 @@ class LocationList extends Component {
     getAllLocations().then((res) => {
       let tmpList = [];
       res.data.map((item) => {
-        tmpList.push({id: item.ID, name: item.name, short_name: item.short_name, country: item.country, type: item.type.name, mid: item._id});
+        tmpList.push({
+          id: item.ID,
+          name: item.name,
+          short_name: item.short_name,
+          country: item.country,
+          type: item.type.name,
+          mid: item._id,
+          region: item.region,
+        });
       });
       this.setState({ locationList: tmpList });
     });
   };
 
   closeWarningMessage = () => {
-    this.setState({warningOpen: false});
-  }
+    this.setState({ warningOpen: false });
+  };
 
   render() {
     let {
@@ -88,49 +93,57 @@ class LocationList extends Component {
       shouldOpenConfirmationDialog,
       shouldOpenEditorDialog,
       warningOpen,
-      warningMessage
+      warningMessage,
     } = this.state;
-    
+
     const columns = [
       {
-      name: "id",
-      label: "ID",
-      options: {
-        filter: true,
-        sort: true,
-      }
+        name: "id",
+        label: "ID",
+        options: {
+          filter: true,
+          sort: true,
+        },
       },
       {
-      name: "short_name",
-      label: "Short Name",
-      options: {
-        filter: true,
-        sort: true,
-      }
+        name: "short_name",
+        label: "Short Name",
+        options: {
+          filter: true,
+          sort: true,
+        },
       },
       {
-      name: "name",
-      label: "Name",
-      options: {
-        filter: true,
-        sort: true,
-      }
+        name: "name",
+        label: "Name",
+        options: {
+          filter: true,
+          sort: true,
+        },
       },
       {
-      name: "country",
-      label: "Country/Location",
-      options: {
-        filter: true,
-        sort: true,
-      }
+        name: "country",
+        label: "Country/Location",
+        options: {
+          filter: true,
+          sort: true,
+        },
       },
       {
-      name: "type",
-      label: "Type",
-      options: {
-        filter: true,
-        sort: true,
-      }
+        name: "region",
+        label: "Region",
+        options: {
+          filter: true,
+          sort: true,
+        },
+      },
+      {
+        name: "type",
+        label: "Type",
+        options: {
+          filter: true,
+          sort: true,
+        },
       },
       {
         name: "action",
@@ -142,29 +155,35 @@ class LocationList extends Component {
           customBodyRenderLite: (dataIndex) => {
             return (
               <>
-              <IconButton
-                onClick={() =>
-                  this.setState({
-                    mid: this.state.locationList[dataIndex].mid,
-                    shouldOpenEditorDialog: true
-                  })
-                }
-              >
-                <Icon color="primary">edit</Icon>
-              </IconButton>  
-              <IconButton onClick={() => this.handleDeleteLocation(this.state.locationList[dataIndex].mid)}>
-                <Icon color="error">delete</Icon>
-              </IconButton>
+                <IconButton
+                  onClick={() =>
+                    this.setState({
+                      mid: this.state.locationList[dataIndex].mid,
+                      shouldOpenEditorDialog: true,
+                    })
+                  }
+                >
+                  <Icon color="primary">edit</Icon>
+                </IconButton>
+                <IconButton
+                  onClick={() =>
+                    this.handleDeleteLocation(
+                      this.state.locationList[dataIndex].mid
+                    )
+                  }
+                >
+                  <Icon color="error">delete</Icon>
+                </IconButton>
               </>
             );
-          }
-        }
+          },
+        },
       },
     ];
-    
+
     return (
       <div className="m-sm-30">
-        <div  className="mb-sm-30">
+        <div className="mb-sm-30">
           <Breadcrumb routeSegments={[{ name: "Warehouse Location" }]} />
         </div>
 
@@ -172,7 +191,9 @@ class LocationList extends Component {
           className="mb-16"
           variant="contained"
           color="primary"
-          onClick={() => this.setState({ shouldOpenEditorDialog: true, mid: null })}
+          onClick={() =>
+            this.setState({ shouldOpenEditorDialog: true, mid: null })
+          }
         >
           Add New Location
         </Button>
@@ -204,7 +225,7 @@ class LocationList extends Component {
         <Snackbar
           anchorOrigin={{
             vertical: "top",
-            horizontal: "right"
+            horizontal: "right",
           }}
           open={warningOpen}
           autoHideDuration={6000}

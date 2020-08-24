@@ -11,8 +11,7 @@ router.post("/report", (req, res) => {
   const end_date = date.setHours(24, 59, 59, 59);
   InventoryWarehouse.findOne({
     date: { $gte: new Date(start_date), $lte: new Date(end_date) },
-    warehouse_name: req.body.warehouse_name,
-    country: req.body.location,
+    warehouse: req.body.warehouse,
   })
     .populate("submitted_user")
     .exec(function (err, doc) {
