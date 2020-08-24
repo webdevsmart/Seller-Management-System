@@ -21,4 +21,7 @@ export const getLocationNameList = () => {
 export const getLocationListByName = data => {
   return axios.post("/api/inventory-warehouse-location/location-list", data);
 };
+export const getAllWarehouseRegions = () => {
+  return axios.get("/api/inventory-warehouse-location/region-list");
+}
 

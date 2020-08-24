@@ -86,4 +86,15 @@ router.post("/delete", async (req, res) => {
   }
 });
 
+router.get("/region-list", async (req, res) => {
+  InventoryWarehouseLocation.aggregate( 
+    [ { '$group': { '_id': "$region" } } ],	  
+    function(err, results) {
+        if (err)
+            return res.statu(400).json(err);
+        return res.status(200).json(results);
+    }
+  );
+});
+
 module.exports = router;
