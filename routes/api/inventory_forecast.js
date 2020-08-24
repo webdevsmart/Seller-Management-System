@@ -78,7 +78,7 @@ router.post("/report", async (req, res) => {
           let lastYearSold = 0;
           let lastNext90Sold = 0;
           let salesOutlets = await SalesOutlet.find({
-            warehouse: warehouse,
+            warehouse: { $in: warehouseIDs },
           }).select({ _id: 1 });
           salesOutlets = salesOutlets.map((id) => {
             return id._id;
