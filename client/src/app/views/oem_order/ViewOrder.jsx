@@ -226,7 +226,7 @@ class ViewOrder extends Component {
                           product.parts_list.map((part, part_index) => {
                             return (
                               <TableRow key={generateRandomId()}>
-                                <TableCell align="center">{part.quantity}</TableCell>
+                                <TableCell align="center">{parseInt(part.quantity)}</TableCell>
                                 <TableCell align="center">{part.ID}</TableCell>
                                 <TableCell align="center">{part.name}</TableCell>
                                 <TableCell align="center">{part.type.name}</TableCell>
