@@ -114,6 +114,12 @@ class Sidenav extends Component {
         permission: "inventory_warehouse"
       },
       {
+        name: "Add Inventory Factory",
+        icon: "group_work",
+        path: "/inventory-factory/add",
+        permission: "inventory_factory"
+      },
+      {
         name: "Warehouse Location Types",
         iconText: "W",
         path: "/warehouse-location-type/list",
@@ -142,6 +148,18 @@ class Sidenav extends Component {
         iconText: "S",
         path: "/sales-report-summary/index",
         permission: "sales_report_summary"
+      },
+      {
+        name: "Manage Report",
+        iconText: "R",
+        path: "/reports/index",
+        permission: "reports"
+      },
+      {
+        name: "Manage OEM Report",
+        iconText: "p",
+        path: "/oem-order/index",
+        permission: "oem_order"
       },
     ],
   };

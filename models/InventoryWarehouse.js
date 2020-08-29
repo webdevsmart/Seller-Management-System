@@ -16,6 +16,11 @@ const InventoryWarehouseSchema = new Schema({
     type: Date,
     required: true,
   },
+  editted_user: {
+    type: Schema.Types.ObjectId,
+    ref: 'users',
+    required: true,
+  },
   submitted_user: {
     type: Schema.Types.ObjectId,
     ref: 'users',

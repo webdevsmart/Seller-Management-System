@@ -19,10 +19,13 @@ import userRoutes from "./views/users/UserRoutes";
 import warehouseLocationTypeRoutes from "./views/warehouse_location_type/LocationTypeRoutes";
 import inventoryWarehouseLocationRoutes from "./views/inventory_warehouse_location/LocationRoutes";
 import inventoryWarehouseRoutes from "./views/inventory_warehouse/InventoryWarehouseRoutes";
+import inventoryFactoryRoutes from "./views/inventory_factory/InventoryFactoryRoutes";
 import inventoryForecastRoutes from "./views/inventory_forecast/InventoryForecastRoutes";
 import salesOutletRoutes from "./views/sales_outlet/SalesOutletRoutes";
 import salesOutletReportRoutes from "./views/sales_outlet_report/SalesOutletReportRoutes";
 import salesReportSummaryRoutes from "./views/sales_report_summary/SalesReportSummaryRoutes";
+import reportRoutes from "./views/report/ReportRoutes";
+import oemOrderRoutes from "./views/oem_order/OEMOrderRoutes";
 
 const redirectRoute = [
   {
@@ -58,9 +61,12 @@ const routes = [
   ...warehouseLocationTypeRoutes,
   ...inventoryWarehouseLocationRoutes,
   ...inventoryWarehouseRoutes,
+  ...inventoryFactoryRoutes,
   ...salesOutletRoutes,
   ...salesOutletReportRoutes,
   ...salesReportSummaryRoutes,
+  ...reportRoutes,
+  ...oemOrderRoutes,
   ...redirectRoute,
   ...errorRoute,
 ];

@@ -24,6 +24,36 @@ const ProductSchema = new Schema({
     type: String,
     required: true
   },
+  upc_image: {
+    path : String,
+    date : String,
+    file_name : String,
+  },
+  fnsku: {
+    type: String,
+    required: true,
+  },
+  fnsku_image: {
+    path : String,
+    date : String,
+    file_name : String,
+  },
+  design: {
+    type: String,
+    required: true,
+  },
+  brand: {
+    type: String,
+    requried: true,
+  },
+  units_perCarton: {
+    type: String,
+    required: true,
+  },
+  packing_material: {
+    type: String,
+    required: true,
+  },
   asin: {
     type: String,
     required: true
@@ -125,7 +155,8 @@ const ProductSchema = new Schema({
   fullfillment_type: {
     type: String,
     required: true,
-  }
+  },
+
 });
 
 module.exports = Product = mongoose.model("product", ProductSchema);

@@ -15,7 +15,7 @@ import {
 } from "@material-ui/core";
 import {
   MuiPickersUtilsProvider,
-  KeyboardDateTimePicker ,
+  KeyboardDateTimePicker,
 } from "@material-ui/pickers";
 import { SimpleCard } from "egret";
 import "date-fns";
@@ -24,20 +24,14 @@ import NumberFormat from "react-number-format";
 import MUIDataTable from "mui-datatables";
 import MySnackbarContentWrapper from "../../components/Snackbar/Snackbar";
 import CustomSelect from "../../components/CustomSelect/CustomSelect";
-import {
-  getAllLocations,
-} from "../inventory_warehouse_location/LocationService";
-import {
-  addNewInventoryReport,
-} from "./InventoryWarehouseService";
-import {
-  getAllProducts
-} from "../product/ProductService"
+import { getAllLocations } from "../inventory_warehouse_location/LocationService";
+import { addNewInventoryReport } from "./InventoryWarehouseService";
+import { getAllProducts } from "../product/ProductService";
 import { generateRandomId } from "utils";
 import moment from "moment";
 
 const options = {
-  filterType: 'checkbox',
+  filterType: "checkbox",
   customToolbarSelect: () => {},
   selectableRows: "none",
 };
@@ -82,7 +76,18 @@ class LocationList extends Component {
       const data = res.data;
       let tmpList = [];
       data.map((item) => {
-        tmpList.push({ ...item, value: item._id, label: item.ID + " - " + item.short_name + " - " + item.country + " - " + item.type.name });
+        tmpList.push({
+          ...item,
+          value: item._id,
+          label:
+            item.ID +
+            " - " +
+            item.short_name +
+            " - " +
+            item.country +
+            " - " +
+            item.type.name,
+        });
       });
       this.setState({ warehouseOptions: tmpList });
     });
@@ -100,11 +105,11 @@ class LocationList extends Component {
           name: item.name,
           warehouse: 0,
           warehouse_inbound: 0,
-        }
+        };
       });
-      this.setState({reportList});
+      this.setState({ reportList });
     });
-  }
+  };
 
   handleSelectWarehouse = (data) => {
     this.setState({ selectedWarehouse: data });
@@ -156,14 +161,22 @@ class LocationList extends Component {
     });
     let postData = {
       items: newItem,
-      ID: 'IR' + generateRandomId(),
+      ID: "IR" + generateRandomId(),
       warehouse: this.state.selectedWarehouse.value,
       datetime: this.state.datetime,
       submitted_user: JSON.parse(localStorage.getItem("auth_user"))._id,
+      editted_user: JSON.parse(localStorage.getItem("auth_user"))._id,
     };
     addNewInventoryReport(postData).then((res) => {
       this.getInitialState();
-      this.setState({ submitLoading: false, messageOpen: true, messageType: "success", messageContent: "Submitted successfully!" });
+      this.setState({
+        selectedWarehouse: null,
+        datetime: new Date(),
+        submitLoading: false,
+        messageOpen: true,
+        messageType: "success",
+        messageContent: "Submitted successfully!",
+      });
     });
   };
 
@@ -187,7 +200,7 @@ class LocationList extends Component {
         options: {
           filter: true,
           sort: true,
-        }
+        },
       },
       {
         name: "upc",
@@ -195,7 +208,7 @@ class LocationList extends Component {
         options: {
           filter: true,
           sort: true,
-        }
+        },
       },
       {
         name: "asin",
@@ -203,7 +216,7 @@ class LocationList extends Component {
         options: {
           filter: true,
           sort: true,
-        }
+        },
       },
       {
         name: "name",
@@ -211,7 +224,7 @@ class LocationList extends Component {
         options: {
           filter: true,
           sort: true,
-        }
+        },
       },
       {
         name: "warehouse",
@@ -224,11 +237,7 @@ class LocationList extends Component {
               <TextField
                 name="warehouse"
                 onChange={(e) =>
-                  this.handleInputChange(
-                    e,
-                    "warehouse",
-                    dataIndex
-                  )
+                  this.handleInputChange(e, "warehouse", dataIndex)
                 }
                 InputProps={{
                   inputComponent: NumberFormatCustom,
@@ -236,8 +245,8 @@ class LocationList extends Component {
                 value={this.state.reportList[dataIndex].warehouse}
               />
             );
-          }
-        }
+          },
+        },
       },
       {
         name: "warehouse_inbound",
@@ -250,11 +259,7 @@ class LocationList extends Component {
               <TextField
                 name="warehouse_inbound"
                 onChange={(e) =>
-                  this.handleInputChange(
-                    e,
-                    "warehouse_inbound",
-                    dataIndex
-                  )
+                  this.handleInputChange(e, "warehouse_inbound", dataIndex)
                 }
                 InputProps={{
                   inputComponent: NumberFormatCustom,
@@ -262,8 +267,8 @@ class LocationList extends Component {
                 value={this.state.reportList[dataIndex].warehouse_inbound}
               />
             );
-          }
-        }
+          },
+        },
       },
       {
         name: "warehouse_inbound",
@@ -274,13 +279,12 @@ class LocationList extends Component {
           customBodyRenderLite: (dataIndex) => {
             return (
               <>
-              {
-                parseInt(this.state.reportList[dataIndex].warehouse) + parseInt(this.state.reportList[dataIndex].warehouse_inbound)
-              }
+                {parseInt(this.state.reportList[dataIndex].warehouse) +
+                  parseInt(this.state.reportList[dataIndex].warehouse_inbound)}
               </>
             );
-          }
-        }
+          },
+        },
       },
     ];
 
@@ -295,7 +299,9 @@ class LocationList extends Component {
               <div className="pr-16">
                 <p className="m-0 text-black">
                   Last Submitted{" "}
-                  <span className="text-error">{moment(submittedInfo.modifiedAt).format("LLLL")}</span>{" "}
+                  <span className="text-error">
+                    {moment(submittedInfo.modifiedAt).format("LLLL")}
+                  </span>{" "}
                   by{" "}
                   <span className="font-weight-500 text-primary">
                     {submittedInfo.userName}
@@ -322,7 +328,7 @@ class LocationList extends Component {
             </Grid>
             <Grid item sm={6} xs={12}>
               <MuiPickersUtilsProvider utils={DateFnsUtils}>
-                <KeyboardDateTimePicker 
+                <KeyboardDateTimePicker
                   className="mb-16 w-100"
                   margin="none"
                   id="mui-pickers-date"

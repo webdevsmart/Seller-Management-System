@@ -21,15 +21,18 @@ const SalesOutletReportSchema = new Schema({
     ref: 'users',
     required: true,
   },
-  modified_at: {
-    type: Date,
-    default: new Date(),
+  editted_user: {
+    type: Schema.Types.ObjectId,
+    ref: 'users',
     required: true,
   },
-  create_at: {
-      type: Date,
-      default: new Date(),
-      required: true,
+  modified_at: {
+    type: Date,
+    required: true,
+  },
+  created_at: {
+    type: Date,
+    required: true,
   }
 });
 

@@ -17,6 +17,7 @@
     "downshift": "^3.2.10",
     "echarts": "^4.2.1",
     "echarts-for-react": "^2.0.15-beta.0",
+    "file-saver": "^2.0.2",
     "firebase": "^6.6.1",
     "history": "^4.10.0",
     "lodash": "^4.17.15",

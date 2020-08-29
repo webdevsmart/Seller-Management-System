@@ -32,7 +32,7 @@ import { getAllCategories } from "../product_category/CategoryService";
 import { getAllVariationType, getAllVariationValue } from "../product_variation/VariationService";
 import { getAllFreight } from "../freight/FreightService";
 import { getAllParts } from "../parts/PartsService";
-import { addNewProduct } from "../product/ProductService"
+import { addNewProduct, uploadAdditionImage } from "./ProductService"
 import NumberFormat from "react-number-format";
 import { generateRandomId } from "utils";
 import { getAllStorage } from "../storage/StorageService";
@@ -111,7 +111,12 @@ class AddNewProduct extends Component {
     name: "",
     SKU: "",
     UPC: "",
+    UPCImage: null,
     ASIN: "",
+    FNSKU: "",
+    FNSKUImage: null,
+    brand: "",
+    design: "",
     selectedParentCategory: "",
     selectedCategoryList: [],
     retailPrice: 0,
@@ -130,6 +135,9 @@ class AddNewProduct extends Component {
     selectedParts: [],
     selectedPartsIndex: [],
     notes: "",
+    unitsPerCarton: 0,
+    packingMaterial: 0,
+
     selectedStorage: null,
     fullfillmentType: "Amazon",
     storageDuration: 0,
@@ -244,6 +252,11 @@ class AddNewProduct extends Component {
       parts_qty: parts_qty,
       fullfillment_fba_fee: fulfillmentFBAFee,
       fullfillment_type: this.state.fullfillmentType,
+      fnsku: this.state.FNSKU,
+      brand: this.state.brand,
+      design: this.state.design,
+      units_perCarton: this.state.unitsPerCarton,
+      packing_material: this.state.packingMaterial,
     };
     const config = {
         headers: {
@@ -256,8 +269,19 @@ class AddNewProduct extends Component {
     });
     formData.append('new_product', JSON.stringify(newProduct));
     addNewProduct(formData, config).then((res) => {
-      this.setState({loading: false});
-      this.setState({messageType: "success", messageOpen: true, message: "You added the product successfully!"}, () => {
+      const newFormData = new FormData();
+      newFormData.append('_id', res.data._id);
+      newFormData.append('files', this.state.UPCImage.file)
+      newFormData.append('files', this.state.FNSKUImage.file)
+      uploadAdditionImage(newFormData, config).then((res1) => {
+        
+        this.setState({loading: false});
+        this.setState({messageType: "success", messageOpen: true, message: "You added the product successfully!"}, () => {
+        });
+      }).catch((err) => {
+        this.setState({loading: false});
+        this.setState({messageType: "warning", messageOpen: true, message: "Something went wrong! please refresh and try again."}, () => {
+        });
       });
     }).catch((err) => {
       this.setState({loading: false});
@@ -462,12 +486,55 @@ class AddNewProduct extends Component {
     this.setState(variationQualities);
   }
 
+  handleSetUPCImage = event => {
+    let {UPCImage} = this.state;
+    let file = event.target.files[0];
+    if (!file.type.includes('image')) {
+      this.setState({messageOpen: true, message: "The file format should be image.", messageType: "warning"});
+    }
+    if (file.type.includes('image') && parseFloat(file.size / 1024 / 1024) <= 10) 
+    {
+      UPCImage = {
+        file: file,
+        preview: URL.createObjectURL(file),
+        fileName: file.name,
+        date: moment().format("YYYY-MM-DD HH:mm:ss"),
+      }
+    }
+    this.setState({UPCImage});
+  }
+  
+  handleSetFNSKUImage = event => {
+    let {FNSKUImage} = this.state;
+    let file = event.target.files[0];
+    if (!file.type.includes('image')) {
+      this.setState({messageOpen: true, message: "The file format should be image.", messageType: "warning"});
+    }
+    if (file.type.includes('image') && parseFloat(file.size / 1024 / 1024) <= 10) 
+    {
+      FNSKUImage = {
+        file: file,
+        preview: URL.createObjectURL(file),
+        fileName: file.name,
+        date: moment().format("YYYY-MM-DD HH:mm:ss"),
+      }
+    }
+    this.setState({FNSKUImage});
+  }
+
+  
+
   render() {
     let { 
       name,
       SKU,
       UPC,
       ASIN,
+      FNSKU,
+      design,
+      brand,
+      UPCImage,
+      FNSKUImage,
       retailPrice,
       selectedFFAmazon,
       selectedFFUs,
@@ -490,6 +557,10 @@ class AddNewProduct extends Component {
       partsList,
       selectedParts,
       notes,
+      unitsPerCarton,
+      packingMaterial,
+
+
       storageList,
       fullfillmentList,
       selectedStorage,
@@ -649,16 +720,45 @@ class AddNewProduct extends Component {
                   validators={["required"]}
                   errorMessages={["this field is required"]}
                 />
-                <TextValidator
-                  className="mb-16 w-100"
-                  label="UPC"
-                  onChange={this.handleChange}
-                  type="text"
-                  name="UPC"
-                  value={UPC}
-                  validators={["required"]}
-                  errorMessages={["this field is required"]}
-                />
+                <div className="w-100 mb-16">
+                  <TextValidator
+                    className="mb-16 w-100"
+                    label="UPC"
+                    onChange={this.handleChange}
+                    type="text"
+                    name="UPC"
+                    value={UPC}
+                    validators={["required"]}
+                    errorMessages={["this field is required"]}
+                  />
+                  <label htmlFor="upload-upc-image">
+                    <Fab
+                      className="capitalize"
+                      color="primary"
+                      component="span"
+                      variant="extended"
+                    >
+                      <div className="flex flex-middle">
+                        <Icon className="pr-8">cloud_upload</Icon>
+                        <span>Upload UPC Image</span>
+                      </div>
+                    </Fab>
+                    <input
+                      className="display-none"
+                      onChange={this.handleSetUPCImage}
+                      id="upload-upc-image"
+                      type="file"
+                      accept="image/x-png,image/gif,image/jpeg"
+                    />
+                  </label>
+                  <div className="w-100 text-center mt-16">
+                  {
+                    UPCImage && (
+                      <img src={UPCImage.preview} alt="project" style={{width: '200px', height: '200px', objectFit: 'cover'}}/>
+                    )
+                  }
+                  </div>
+                </div>
                 <TextValidator
                   className="mb-16 w-100"
                   label="ASIN"
@@ -666,6 +766,68 @@ class AddNewProduct extends Component {
                   type="text"
                   name="ASIN"
                   value={ASIN}
+                  validators={["required"]}
+                  errorMessages={["this field is required"]}
+                />
+                
+                <div className="w-100 mb-16">
+                  <TextValidator
+                    className="mb-16 w-100"
+                    label="FNSKU"
+                    onChange={this.handleChange}
+                    type="text"
+                    name="FNSKU"
+                    value={FNSKU}
+                    validators={["required"]}
+                    errorMessages={["this field is required"]}
+                  />
+                  
+                  <label htmlFor="upload-fnsku-image">
+                    <Fab
+                      className="capitalize"
+                      color="secondary"
+                      component="span"
+                      variant="extended"
+                    >
+                      <div className="flex flex-middle">
+                        <Icon className="pr-8">cloud_upload</Icon>
+                        <span>Upload FNSKU Image</span>
+                      </div>
+                    </Fab>
+                    <input
+                      className="display-none"
+                      onChange={this.handleSetFNSKUImage}
+                      id="upload-fnsku-image"
+                      type="file"
+                      accept="image/x-png,image/gif,image/jpeg"
+                    />
+                  </label>
+                  <div className="w-100 text-center mt-16">
+                  {
+                    FNSKUImage && (
+                      <img src={FNSKUImage.preview} alt="project" style={{width: '200px', height: '200px', objectFit: 'cover'}}/>
+                    )
+                  }
+                  </div>
+                </div>
+                <TextValidator
+                  className="mb-16 w-100"
+                  label="Brand"
+                  onChange={this.handleChange}
+                  type="text"
+                  name="brand"
+                  value={brand}
+                  validators={["required"]}
+                  errorMessages={["this field is required"]}
+                />
+                
+                <TextValidator
+                  className="mb-16 w-100"
+                  label="Design"
+                  onChange={this.handleChange}
+                  type="text"
+                  name="design"
+                  value={design}
                   validators={["required"]}
                   errorMessages={["this field is required"]}
                 />
@@ -1368,7 +1530,7 @@ class AddNewProduct extends Component {
               </Grid>
         {/* =================== Ebd Storage Part =================== */}
 
-              <Grid item lg={12} md={12} sm={12} xs={12}>
+              <Grid item lg={6} md={6} sm={6} xs={12}>
                 <TextField
                     label="Notes"
                     fullWidth
@@ -1379,6 +1541,71 @@ class AddNewProduct extends Component {
                     value={notes}
                 />
               </Grid>
+
+              <Grid item lg={2} md={2} sm={2} xs={12}>
+                <span className="mb-16">Prepare To Ship</span>
+                
+                <TextField
+                  className="mb-16 w-100"
+                  onChange={(e) => this.setState({unitsPerCarton: e.target.value})}
+                  label="Units Per Carton"
+                  InputProps={{
+                    inputComponent: NumberFormatCustom,
+                  }}
+                  name="unitsPerCarton"
+                  value={unitsPerCarton}
+                />
+              </Grid>
+
+              <Grid item lg={2} md={2} sm={2} xs={12}>
+                <div className="w-100">
+                <span className="mb-16">Packing Materials</span>
+                
+                <TextField
+                  className="mb-16 w-100"
+                  onChange={(e) => this.setState({packingMaterial: e.target.value})}
+                  label= "Grams"
+                  InputProps={{
+                    inputComponent: NumberFormatCustom,
+                  }}
+                  name="packingMaterial"
+                  value={packingMaterial}
+                />
+
+                <TextValidator
+                    className="mb-16 w-100"
+                    label="Pounds"
+                    type="text"
+                    value={parseFloat(packingMaterial / 1000 * 2.20462).toFixed(2)}
+                    readOnly
+                />
+                </div>
+              </Grid>
+
+              <Grid item lg={2} md={2} sm={2} xs={12}>
+                
+                <span className="mb-16">Packed Carton Weight</span>
+                
+                <TextValidator
+                    className="mb-16 w-100"
+                    label="Grams"
+                    type="text"
+                    value={(parseFloat(packagedGrams) * parseFloat(unitsPerCarton) + parseFloat(packingMaterial)).toFixed(2)}
+                    readOnly
+                />
+                
+                <TextValidator
+                    className="mb-16 w-100"
+                    label="Pounds"
+                    type="text"
+                    value={
+                      parseFloat((parseFloat(packagedGrams) * parseFloat(unitsPerCarton) + parseFloat(packingMaterial))/1000 * 2.20462).toFixed(2)
+                    }
+                    readOnly
+                />
+
+              </Grid>
+
               <Grid item lg={12} md={12} sm={12} xs={12}>
                 <div className="w-100 overflow-auto" style={{paddingBottom: '250px'}}>
                   <Table style={{border: '1px solid rgba(224, 224, 224, 1)', whiteSpace: "pre"}}>

@@ -39,6 +39,7 @@ router.post("/report", async (req, res) => {
       return id._id;
     });
   }
+  let warehouseList = await InventoryWarehouseLocation.find({ _id: {$in : warehouseIDs} });
   InventoryWarehouse.find({ warehouse: { $in: warehouseIDs } })
   .populate("warehouse")
   .populate({
@@ -133,7 +134,7 @@ router.post("/report", async (req, res) => {
           return newObj;
         })
       );
-      return res.status(200).json(results);
+      return res.status(200).json({results:results, warehouseList: warehouseList});
     });
   });
 

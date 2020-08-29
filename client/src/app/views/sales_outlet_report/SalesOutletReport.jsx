@@ -19,8 +19,7 @@ import NumberFormat from "react-number-format";
 import MySnackbarContentWrapper from "../../components/Snackbar/Snackbar";
 import CustomSelect from "../../components/CustomSelect/CustomSelect";
 import {
-  getSalesOutletNameList,
-  getSalesOutletLocationListByName,
+  getAllSalesOutlets,
 } from "../sales_outlet/SalesOutletService";
 import {
   addNewSalesOutletReport,
@@ -57,9 +56,7 @@ function NumberFormatCustom(props) {
 class SalesOutletReport extends Component {
   state = {
     salesOutletList: [],
-    locationList: [],
     selectedSalesOutlet: null,
-    selectedLocation: null,
     date: null,
     reportList: [],
 
@@ -75,9 +72,9 @@ class SalesOutletReport extends Component {
 
   componentDidMount() {
     this.getInitialState();
-    getSalesOutletNameList().then((res) => {
+    getAllSalesOutlets().then((res) => {
       let salesOutletList = res.data.map((item) => {
-        return { value: item._id, label: "Sales Outlet Report - " + item._id };
+        return { value: item._id, label: `${item.ID} - ${item.short_name} - ${item.name} - ${item.location}` };
       });
       this.setState({ salesOutletList });
     });
@@ -107,10 +104,7 @@ class SalesOutletReport extends Component {
   };
 
   validateSelection = () => {
-    if (
-      this.state.selectedSalesOutlet == null ||
-      this.state.selectedLocation == null
-    ) {
+    if ( this.state.selectedSalesOutlet == null ) {
       this.setState({
         messageOpen: true,
         messageType: "warning",
@@ -138,12 +132,6 @@ class SalesOutletReport extends Component {
 
   handleSelectSalesOutlet = (data) => {
     this.setState({ selectedSalesOutlet: data });
-    getSalesOutletLocationListByName({ name: data.value }).then((res) => {
-      let locationList = res.data.map((item) => {
-        return { ...item, value: item._id, label: item.location };
-      });
-      this.setState({ locationList });
-    });
   };
 
   handleSubmit = () => {
@@ -162,9 +150,10 @@ class SalesOutletReport extends Component {
     let postData = {
       ID: "SR" + generateRandomId(),
       items: newItem,
-      sales_outlet: this.state.selectedLocation.value,
+      sales_outlet: this.state.selectedSalesOutlet.value,
       date: this.state.date,
       submitted_user: JSON.parse(localStorage.getItem("auth_user"))._id,
+      editted_user: JSON.parse(localStorage.getItem("auth_user"))._id,
     };
     addNewSalesOutletReport(postData).then((res) => {
       this.setState({
@@ -172,6 +161,8 @@ class SalesOutletReport extends Component {
         messageOpen: true,
         messageType: "success",
         messageContent: "Submitted successfully!",
+        selectedSalesOutlet: null,
+        date: new Date(),
       });
       this.getInitialState();
     });
@@ -182,8 +173,6 @@ class SalesOutletReport extends Component {
       reportList,
       salesOutletList,
       selectedSalesOutlet,
-      locationList,
-      selectedLocation,
       date,
       submitLoading,
       messageType,
@@ -328,10 +317,10 @@ class SalesOutletReport extends Component {
             </Card>
           )}
           <Grid container spacing={4} style={{ marginBottom: "250px" }}>
-            <Grid item sm={6} xs={12}>
+            <Grid item sm={12} xs={12}>
               <CustomSelect
                 textFieldProps={{
-                  label: "Select Sales Outlet Name",
+                  label: "Select Sales Outlet",
                   InputLabelProps: {
                     htmlFor: "react-select-single",
                     shrink: true,
@@ -341,23 +330,6 @@ class SalesOutletReport extends Component {
                 options={salesOutletList}
                 handleChange={(data) => this.handleSelectSalesOutlet(data)}
                 selectedValue={selectedSalesOutlet}
-              />
-            </Grid>
-            <Grid item sm={6} xs={12}>
-              <CustomSelect
-                textFieldProps={{
-                  label: "Select Location",
-                  InputLabelProps: {
-                    htmlFor: "react-select-single",
-                    shrink: true,
-                  },
-                  placeholder: "",
-                }}
-                options={locationList}
-                handleChange={(data) =>
-                  this.setState({ selectedLocation: data })
-                }
-                selectedValue={selectedLocation}
               />
             </Grid>
             <Grid item sm={6} xs={12}>

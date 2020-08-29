@@ -18,3 +18,6 @@ export const updateProduct = NewProduct => {
 export const duplicateProduct = id => {
   return axios.post(`/api/products/duplicate?_id=${id}`);
 }
+export const uploadAdditionImage = (formData, config) => {
+  return axios.post("/api/products/upload-image", formData, config);
+}

@@ -4,53 +4,20 @@ const router = express.Router();
 const SalesOutletReport = require("../../models/SalesOutletReport");
 const SalesOutletReportMeta = require("../../models/SalesOutletReportMeta");
 const Product = require("../../models/Product");
-const {ObjectId} = require('mongodb'); // or ObjectID 
- 
-// router.post("/get", async (req, res) => {
-//     const date = new Date(req.body.date);
-//     SalesOutletReport.findOne({
-//       date: date.getFullYear() + '-' + (date.getMonth() + 1),
-//       sales_outlet: req.body.salesOutlet,
-//     })
-//       .populate("submitted_user")
-//       .exec(function (err, doc) {
-//         if (err) return res.status(400).json({ message: err });
-//         if (doc) {
-//           Product.find({}, async function (err2, docs1) {
-//             if (err2) return res.status(400).json({ message: err2 });
-//             let results = await Promise.all(
-//               docs1.map(async (product_doc) => {
-//                 let meta = await SalesOutletReportMeta.findOne({
-//                   sales_outlet_report: doc._id,
-//                   product: product_doc._id,
-//                 });
-//                 return {
-//                   product_id: product_doc._id,
-//                   sku: product_doc.sku,
-//                   upc: product_doc.upc,
-//                   asin: product_doc.asin,
-//                   name: product_doc.name,
-//                   sold: meta ? meta.sold : 0,
-//                   returned: meta ? meta.returned : 0,
-//                   refunded: meta ? meta.refunded : 0,
-//                 };
-//               })
-//             );
-//             return res.status(200).json({
-//               is_exist: true,
-//               results: results,
-//               submitted_user: doc.submitted_user.name,
-//               modified_at: doc.modified_at,
-//             });
-//           });
-//         } else {
-//           Product.find({}, function (err2, docs1) {
-//             if (err2) return res.status(400).json({ message: err2 });
-//             return res.status(200).json({ is_exist: false, results: docs1 });
-//           });
-//         }
-//       });
-// });
+const Report = require("../../models/Report");
+
+router.get("/get", (req, res) => {
+  SalesOutletReport.findOne({_id: req.query._id}).populate('editted_user').populate('sales_outlet').populate({
+    path: "warehouse",
+    populate: {
+      path: "type",
+      model: "warehouse_location_type",
+    }}).exec(async function (err, doc) {
+    if (err) return res.status(400).json({message: err});
+    let items = await SalesOutletReportMeta.find({sales_outlet_report: req.query._id}).populate('product');
+    return res.status(200).json({items, report: doc});
+  });
+});
 
 router.post("/add", async (req, res) => {
   const date = new Date(req.body.date);
@@ -59,10 +26,18 @@ router.post("/add", async (req, res) => {
     sales_outlet: req.body.sales_outlet,
     date: date.getFullYear() + '-' + (date.getMonth() + 1),
     submitted_user: req.body.submitted_user,
+    editted_user: req.body.editted_user,
+    created_at: new Date(),
+    modified_at: new Date(),
   });
   newSalesOutletReort
     .save()
     .then((doc) => {
+      let newReport = new Report({
+        report_type: 'SALES',
+        model_id: doc._id
+      });
+      newReport.save();
       let items = req.body.items;
       items = items.map(function (entry) {
         entry.sales_outlet_report = doc._id;
@@ -78,6 +53,33 @@ router.post("/add", async (req, res) => {
     .catch((err) => {
       return res.status(400).json({ message: err });
     });
+});
+
+router.post("/update", async (req, res) => {
+  let newObj = {
+    $set: {
+      modified_at: new Date(),
+      sales_outlet: req.body.sales_outlet,
+      date: req.body.date,
+      editted_user: req.body.editted_user
+    }
+  };
+  SalesOutletReport.findByIdAndUpdate({_id: req.body._id}, newObj, async function (err, doc) {
+    await SalesOutletReportMeta.deleteMany({"sales_outlet_report": doc._id});
+
+    let items = req.body.items;
+    items = items.map(function (entry) {
+      entry.sales_outlet_report = doc._id;
+      return entry;
+    });
+    
+    SalesOutletReportMeta.insertMany(items, function (err, doc) {
+      if (err) {
+        return res.status(400).json({ message: err });
+      }
+      return res.status(200).json({ message: "Success" });
+    });
+  });
 });
 
 module.exports = router;

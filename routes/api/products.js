@@ -51,6 +51,26 @@ router.post("/add", upload.array('files', 20), async (req, res) => {
     .catch(err => res.status(400).json(err.message));
 });
 
+router.post("/upload-image", upload.array('files', 20), async (req, res) => {
+    const newData = {
+        $set: {
+            upc_image: {
+                file_name: req.files[0].originalname,
+                path: req.files[0].path,
+                date: new Date(),
+            },
+            fnsku_image: {
+                path: req.files[1].path,
+                file_name: req.files[1].originalname,
+                date: new Date(),
+            }
+        }
+    }
+    Product.findByIdAndUpdate({_id: req.body._id}, newData, function (err, doc) {
+        return res.status(200).json(doc);
+    })
+});
+
 router.get("/get", async (req, res) => {
     const item = await Product.findById(req.query._id)
                 .populate('parent_category')

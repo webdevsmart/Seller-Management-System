@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import {
   Card,
+  CardContent,
+  Snackbar,
   Grid,
   Typography,
   RadioGroup,
@@ -27,22 +29,26 @@ import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import "date-fns";
 import DateFnsUtils from "@date-io/date-fns";
 import CustomSelect from "../../components/CustomSelect/CustomSelect";
+import MySnackbarContentWrapper from "../../components/Snackbar/Snackbar";
 import {
   getAllLocations,
   getAllWarehouseRegions,
 } from "../inventory_warehouse_location/LocationService";
 import { getAllLocationTypes } from "../warehouse_location_type/LocationTypeService";
-import { getCompiledReport } from "./InventoryForecastService";
+import { getCompiledReport, addNewOEMOrder } from "./InventoryForecastService";
 import { countries } from "../../constants";
+import { generateRandomId } from "utils";
 
 class InventoryForecastList extends Component {
   state = {
+    orderList: [],
     forecastType: "single",
     monthYear: new Date(),
     expanded: false,
     groupOption: "country",
     warehouseList: [],
     selectedWarehouse: null,
+    warehouseForQty: null,
     countryList: countries,
     selectedCountry: null,
     typeList: [],
@@ -51,8 +57,12 @@ class InventoryForecastList extends Component {
     selectedRegion: null,
     compiledDataList: [],
     forecastManagerValues: [],
+    warehouseQtyList: [],
     rowsPerPage: 10,
     page: 0,
+    messageType: "warning",
+    messageOpen: false,
+    messageContent: "",
   };
 
   componentDidMount() {
@@ -111,7 +121,25 @@ class InventoryForecastList extends Component {
     getCompiledReport(postData).then((res) => {
       let { compiledDataList, typeList } = this.state;
       compiledDataList = [];
-      res.data.map((item) => {
+      console.log(res.data);
+      let warehouseQtyList = res.data.warehouseList.map((item) => {
+        return { 
+          ...item,
+          label: item.ID + " - " + item.short_name,
+          value: item._id
+        };
+      });
+      this.setState({warehouseQtyList});
+      res.data.results.map((item) => {
+        
+        let rate = parseFloat(
+          (item.this_year_sales_sold -
+            item.last_year_sales_sold) /
+            item.this_year_sales_sold
+        );
+        rate = Number.isNaN(rate) ? 0 : rate;
+        if (item.this_year_sales_sold == 0) rate = 0;
+        
         let newObj = {
           product_id: item.product_id,
           sku: item.sku,
@@ -121,17 +149,26 @@ class InventoryForecastList extends Component {
           this_year_sales_sold: item.this_year_sales_sold,
           last_year_sales_sold: item.last_year_sales_sold,
           last_year_next_90_sales_sold: item.last_year_next_90_sales_sold,
+          rate: rate,
+          totalInLocation: 0,
+          inboundToLocation: 0,
+          manager: 0,
+          warehouseQty: 0,
         };
         typeList.map((type) => {
+          newObj.totalInLocation += item[`${type.name}_warehouse`] ? item[`${type.name}_warehouse`] : 0;
           newObj[`${type.name}_warehouse`] = item[`${type.name}_warehouse`]
             ? item[`${type.name}_warehouse`]
             : "NA";
+          newObj.inboundToLocation = item[`${type.name}_warehouse_inbound`] ? item[`${type.name}_warehouse_inbound`] : 0;
           newObj[`${type.name}_warehouse_inbound`] = item[
             `${type.name}_warehouse_inbound`
           ]
             ? item[`${type.name}_warehouse_inbound`]
             : "NA";
         });
+        let finalQty = parseFloat( newObj.totalInLocation + newObj.inboundToLocation - (newObj.rate * 90 +  item.last_year_next_90_sales_sold) + parseFloat(newObj.manager ? newObj.manager : 0));
+        newObj.finalQty = finalQty;
         compiledDataList.push(newObj);
       });
       this.setState({ compiledDataList });
@@ -150,14 +187,82 @@ class InventoryForecastList extends Component {
     this.setPage(newPage);
   };
 
-  handleChangeMangerValue = (event, index) => {
-    let { forecastManagerValues } = this.state;
-    forecastManagerValues[index] = event.target.value;
-    this.setState({ forecastManagerValues });
+  handleChangeMangerValue = (event, product_id) => {
+    let { compiledDataList } = this.state;
+    let index = compiledDataList.findIndex(x => x.product_id ===product_id);
+    compiledDataList[index].manager = event.target.value;
+    
+    compiledDataList[index].finalQty = parseFloat(
+      compiledDataList[index].totalInLocation +
+      compiledDataList[index].inboundToLocation -
+      (compiledDataList[index].rate * 90 +
+        compiledDataList[index].last_year_next_90_sales_sold) +
+      parseFloat(compiledDataList[index].manager ? compiledDataList[index].manager : 0)
+    ).toFixed(2)
+
+    this.setState({ compiledDataList });
   };
+
+  handleChangeWarehouseQTY = (event, product_id) => {
+    let { compiledDataList } = this.state;
+    let index = compiledDataList.findIndex(x => x.product_id ===product_id);
+    compiledDataList[index].warehouseQty = event.target.value;
+    this.setState({ compiledDataList });
+  }
+
+  createOEMOrder = () => {
+    let {compiledDataList} = this.state;
+    let newItems = compiledDataList.map((item, index) => {
+      return {
+        product_id: item.product_id,
+        warehouse_qty: item.warehouseQty ? item.warehouseQty : 0,
+        order_qty: item.finalQty ? item.finalQty : 0,
+      }
+    });
+    let postData = {
+      ID: "O" + generateRandomId(),
+      items: newItems,
+      warehouse_for_qty: this.state.warehouseForQty.value,
+      date: this.state.monthYear,
+      forecast_type: this.state.forecastType,
+      selected_warehouse: this.state.selectedWarehouse ? this.state.selectedWarehouse.value : null,
+      selected_country: this.state.selectedCountry ? this.state.selectedCountry.value : null,
+      selected_region: this.state.selectedRegion ? this.state.selectedRegion.value : null,
+      selected_type: this.state.selectedType ? this.state.selectedType.value : null,
+      submitted_user: JSON.parse(localStorage.getItem("auth_user"))._id,
+      editted_user: JSON.parse(localStorage.getItem("auth_user"))._id,
+    };
+    addNewOEMOrder(postData).then((res) => {
+      this.setState({messageOpen: true, messageType: 'success', messageContent: 'OEM order has been created successfully.'});
+      let initial = {
+        orderList: [],
+        forecastType: "single",
+        monthYear: new Date(),
+        expanded: false,
+        groupOption: "country",
+        selectedWarehouse: null,
+        warehouseForQty: null,
+        selectedCountry: null,
+        selectedType: null,
+        selectedRegion: null,
+        compiledDataList: [],
+        forecastManagerValues: [],
+        warehouseQtyList: [],
+        rowsPerPage: 10,
+        page: 0,
+      }
+      this.setState({...initial});
+    });
+  }
+
+  closeMessage = () => {
+    this.setState({ messageOpen: false });
+  };
+
 
   render() {
     let {
+      warehouseQtyList,
       forecastType,
       monthYear,
       warehouseList,
@@ -173,7 +278,10 @@ class InventoryForecastList extends Component {
       compiledDataList,
       rowsPerPage,
       page,
-      forecastManagerValues,
+      warehouseForQty,
+      messageOpen,
+      messageType,
+      messageContent
     } = this.state;
 
     return (
@@ -181,7 +289,37 @@ class InventoryForecastList extends Component {
         <div className="mb-sm-30">
           <Breadcrumb routeSegments={[{ name: "Inventory Forecast" }]} />
         </div>
-        {/* <Card className="w-100" elevation={6}> */}
+        <div className="w-100 mb-24">
+          <Grid container spacing={2}>
+            <Grid item lg={8} md={8} sm={6} xs={12}>
+              <CustomSelect
+                textFieldProps={{
+                  label: "Select Warehouse",
+                  InputLabelProps: {
+                    htmlFor: "react-select-single",
+                    shrink: true,
+                  },
+                  placeholder: "",
+                }}
+                options={warehouseQtyList}
+                handleChange={(data) =>
+                  this.setState({ warehouseForQty: data })
+                }
+                selectedValue={warehouseForQty}
+              />
+            </Grid>
+            <Grid item lg={4} md={4} sm={6} xs={12}>
+              <Button
+                onClick={this.createOEMOrder}
+                className="mb-16 mr-32"
+                variant="contained"
+                color="primary"
+              >
+                Create OEM order
+              </Button>
+            </Grid>
+          </Grid>
+        </div>
         <Accordion expanded={expanded === true} onChange={this.handleAccordion}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
@@ -244,15 +382,6 @@ class InventoryForecastList extends Component {
                       color="secondary"
                     >
                       Compiled Data
-                    </Button>
-                    
-                    <Button
-                      onClick={this.showData}
-                      className="mb-16 mr-32"
-                      variant="contained"
-                      color="primary"
-                    >
-                      Create OEM order
                     </Button>
 
                   </Grid>
@@ -394,7 +523,7 @@ class InventoryForecastList extends Component {
                     <TableCell
                       align="center"
                       colSpan={typeList.length + 3}
-                      width="40%"
+                      width="35%"
                       className="bg-primary"
                     ></TableCell>
                     <TableCell
@@ -412,6 +541,13 @@ class InventoryForecastList extends Component {
                       width="20%"
                     >
                       Forecast
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      className="bg-primary"
+                      width="5%"
+                    >
+                      
                     </TableCell>
                   </TableRow>
                   <TableRow>
@@ -435,6 +571,7 @@ class InventoryForecastList extends Component {
                     <TableCell align="center">Darft Qty</TableCell>
                     <TableCell align="center">Manager + / -</TableCell>
                     <TableCell align="center">Final Order Qty</TableCell>
+                    <TableCell align="center">Warehouse QTY</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -445,15 +582,6 @@ class InventoryForecastList extends Component {
                         page * rowsPerPage + rowsPerPage
                       )
                       .map((item, index) => {
-                        let totalInLocation = 0;
-                        let inboundToLocation = 0;
-                        let rate = parseFloat(
-                          (item.this_year_sales_sold -
-                            item.last_year_sales_sold) /
-                            item.this_year_sales_sold
-                        );
-                        rate = Number.isNaN(rate) ? 0 : rate;
-                        if (item.this_year_sales_sold == 0) rate = 0;
                         return (
                           <TableRow key={index}>
                             <TableCell className="px-10" align="center">
@@ -487,14 +615,6 @@ class InventoryForecastList extends Component {
                               </div>
                             </TableCell>
                             {typeList.map((type, typeIndex) => {
-                              totalInLocation +=
-                                item[`${type.name}_warehouse`] === "NA"
-                                  ? 0
-                                  : item[`${type.name}_warehouse`];
-                              inboundToLocation +=
-                                item[`${type.name}_warehouse_inbound`] === "NA"
-                                  ? 0
-                                  : item[`${type.name}_warehouse_inbound`];
                               return (
                                 <TableCell
                                   className="px-10"
@@ -506,13 +626,13 @@ class InventoryForecastList extends Component {
                               );
                             })}
                             <TableCell className="px-10" align="center">
-                              {totalInLocation}
+                              {item.totalInLocation}
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {inboundToLocation}
+                              {item.inboundToLocation}
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {totalInLocation + inboundToLocation}
+                              {item.totalInLocation + item.inboundToLocation}
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               {item.this_year_sales_sold}
@@ -521,41 +641,43 @@ class InventoryForecastList extends Component {
                               {item.last_year_sales_sold}
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {(rate * 100).toFixed(2)}
+                              {(item.rate * 100).toFixed(2)}
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               {item.last_year_next_90_sales_sold}
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               {(
-                                rate * 90 +
+                                item.rate * 90 +
                                 item.last_year_next_90_sales_sold
                               ).toFixed(2)}
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               {parseFloat(
-                                totalInLocation +
-                                  inboundToLocation -
-                                  (rate * 90 +
+                                item.totalInLocation +
+                                item.inboundToLocation -
+                                  (item.rate * 90 +
                                     item.last_year_next_90_sales_sold)
                               ).toFixed(2)}
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               <TextField
-                                value={forecastManagerValues[index]}
+                                value={item.manager ? item.manager : 0}
                                 onChange={(event) =>
-                                  this.handleChangeMangerValue(event, index)
+                                  this.handleChangeMangerValue(event, item.product_id )
                                 }
                               />
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(
-                                totalInLocation +
-                                inboundToLocation -
-                                (rate * 90 +
-                                  item.last_year_next_90_sales_sold) +
-                                parseFloat(forecastManagerValues[index])
-                              ).toFixed(2)}
+                              {item.finalQty}
+                            </TableCell>
+                            <TableCell className="px-10" align="center">
+                              <TextField
+                                value={item.warehouseQty ? item.warehouseQty : 0}
+                                onChange={(event) =>
+                                  this.handleChangeWarehouseQTY(event, item.product_id)
+                                }
+                              />
                             </TableCell>
                           </TableRow>
                         );
@@ -580,6 +702,21 @@ class InventoryForecastList extends Component {
               />
             </div>
           </Grid>
+        <Snackbar
+          anchorOrigin={{
+            vertical: "top",
+            horizontal: "right",
+          }}
+          open={messageOpen}
+          autoHideDuration={2000}
+          onClose={this.closeMessage}
+        >
+          <MySnackbarContentWrapper
+            onClose={this.closeMessage}
+            variant={messageType}
+            message={messageContent}
+          />
+        </Snackbar>
         </Grid>
       </div>
     );
