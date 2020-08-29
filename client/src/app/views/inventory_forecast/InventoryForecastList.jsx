@@ -690,7 +690,7 @@ class InventoryForecastList extends Component {
                               />
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {item.finalQty}
+                              {parseFloat(item.finalQty).toFixed(2)}
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               <TextField

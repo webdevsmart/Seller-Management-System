@@ -111,7 +111,7 @@ class ReportList extends Component {
             return (
               <>
                 {
-                  this.state.reportList[dataIndex].report_type === "Inventory Warehouse" && (
+                  this.state.reportList[dataIndex] && this.state.reportList[dataIndex].report_type === "Inventory Warehouse" && (
                     <Link to={`/reports/inventory-warehouse-report/${this.state.reportList[dataIndex].model_id}`}>
                       <IconButton>
                         <Icon color="primary">edit</Icon>
@@ -120,7 +120,7 @@ class ReportList extends Component {
                   )
                 }
                 {
-                  this.state.reportList[dataIndex].report_type === "Sales" && (
+                  this.state.reportList[dataIndex] && this.state.reportList[dataIndex].report_type === "Sales" && (
                     <Link to={`/reports/sales-report/${this.state.reportList[dataIndex].model_id}`}>
                       <IconButton>
                         <Icon color="primary">edit</Icon>
@@ -129,7 +129,7 @@ class ReportList extends Component {
                   )
                 }
                 {
-                  this.state.reportList[dataIndex].report_type === "Inventory Factory" && (
+                  this.state.reportList[dataIndex] && this.state.reportList[dataIndex].report_type === "Inventory Factory" && (
                     <Link to={`/reports/inventory-factory-report/${this.state.reportList[dataIndex].model_id}`}>
                       <IconButton>
                         <Icon color="primary">edit</Icon>
