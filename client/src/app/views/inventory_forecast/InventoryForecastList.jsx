@@ -63,6 +63,7 @@ class InventoryForecastList extends Component {
     messageType: "warning",
     messageOpen: false,
     messageContent: "",
+    isCompiled: false,
   };
 
   componentDidMount() {
@@ -121,7 +122,6 @@ class InventoryForecastList extends Component {
     getCompiledReport(postData).then((res) => {
       let { compiledDataList, typeList } = this.state;
       compiledDataList = [];
-      console.log(res.data);
       let warehouseQtyList = res.data.warehouseList.map((item) => {
         return { 
           ...item,
@@ -137,6 +137,20 @@ class InventoryForecastList extends Component {
             item.last_year_sales_sold) /
             item.this_year_sales_sold
         );
+        if (item.this_year_sales_sold > item.last_year_sales_sold)
+            rate = parseFloat(
+              (item.this_year_sales_sold -
+                item.last_year_sales_sold) /
+                item.this_year_sales_sold
+            );
+        else  {
+          console.log("xx");
+          rate = 0 - parseFloat(
+            (item.last_year_sales_sold -
+              item.this_year_sales_sold) /
+              item.last_year_sales_sold
+          );
+        }
         rate = Number.isNaN(rate) ? 0 : rate;
         if (item.this_year_sales_sold == 0) rate = 0;
         
@@ -171,7 +185,7 @@ class InventoryForecastList extends Component {
         newObj.finalQty = finalQty;
         compiledDataList.push(newObj);
       });
-      this.setState({ compiledDataList });
+      this.setState({ compiledDataList, isCompiled: true });
     });
   };
 
@@ -250,6 +264,7 @@ class InventoryForecastList extends Component {
         warehouseQtyList: [],
         rowsPerPage: 10,
         page: 0,
+        isCompiled: false,
       }
       this.setState({...initial});
     });
@@ -281,44 +296,14 @@ class InventoryForecastList extends Component {
       warehouseForQty,
       messageOpen,
       messageType,
-      messageContent
+      messageContent,
+      isCompiled
     } = this.state;
 
     return (
       <div className="m-sm-30">
         <div className="mb-sm-30">
           <Breadcrumb routeSegments={[{ name: "Inventory Forecast" }]} />
-        </div>
-        <div className="w-100 mb-24">
-          <Grid container spacing={2}>
-            <Grid item lg={8} md={8} sm={6} xs={12}>
-              <CustomSelect
-                textFieldProps={{
-                  label: "Select Warehouse",
-                  InputLabelProps: {
-                    htmlFor: "react-select-single",
-                    shrink: true,
-                  },
-                  placeholder: "",
-                }}
-                options={warehouseQtyList}
-                handleChange={(data) =>
-                  this.setState({ warehouseForQty: data })
-                }
-                selectedValue={warehouseForQty}
-              />
-            </Grid>
-            <Grid item lg={4} md={4} sm={6} xs={12}>
-              <Button
-                onClick={this.createOEMOrder}
-                className="mb-16 mr-32"
-                variant="contained"
-                color="primary"
-              >
-                Create OEM order
-              </Button>
-            </Grid>
-          </Grid>
         </div>
         <Accordion expanded={expanded === true} onChange={this.handleAccordion}>
           <AccordionSummary
@@ -497,6 +482,42 @@ class InventoryForecastList extends Component {
           </AccordionDetails>
         </Accordion>
         {/* </Card> */}
+        
+        <div className="w-100 mt-24 mb-24">
+          <Grid container spacing={2}>
+            <Grid item lg={8} md={8} sm={6} xs={12}>
+            {
+              isCompiled && (
+                <CustomSelect
+                  textFieldProps={{
+                    label: "Select Warehouse",
+                    InputLabelProps: {
+                      htmlFor: "react-select-single",
+                      shrink: true,
+                    },
+                    placeholder: "",
+                  }}
+                  options={warehouseQtyList}
+                  handleChange={(data) =>
+                    this.setState({ warehouseForQty: data })
+                  }
+                  selectedValue={warehouseForQty}
+                />
+              )
+            }
+            </Grid>
+            <Grid item lg={4} md={4} sm={6} xs={12}>
+              <Button
+                onClick={this.createOEMOrder}
+                className="mb-16 mr-32"
+                variant="contained"
+                color="primary"
+              >
+                Create OEM order
+              </Button>
+            </Grid>
+          </Grid>
+        </div>
         <Grid
           container
           spacing={4}
@@ -641,7 +662,7 @@ class InventoryForecastList extends Component {
                               {item.last_year_sales_sold}
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {(item.rate * 100).toFixed(2)}
+                              {(item.rate * 100).toFixed(2)} %
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               {item.last_year_next_90_sales_sold}
