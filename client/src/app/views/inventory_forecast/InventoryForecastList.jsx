@@ -189,8 +189,7 @@ class InventoryForecastList extends Component {
             ? item[`${type.name}_warehouse_inbound`]
             : NaN;
         });
-        newObj.draftQty=item.last_year_next_90_sales_sold === 0 ? item.this_year_sales_sold * 3 : parseInt(newObj._90days_forecast -
-          newObj.totalInLocation - newObj.inboundToLocation);
+        newObj.draftQty=item.this_year_sales_sold * 3;
         let finalQty = parseInt(
           newObj.draftQty
         );
@@ -558,7 +557,7 @@ class InventoryForecastList extends Component {
                     ></TableCell>
                     <TableCell
                       align="center"
-                      colSpan={5}
+                      colSpan={4}
                       className="bg-secondary"
                       width="25%"
                     >
@@ -596,7 +595,6 @@ class InventoryForecastList extends Component {
                     <TableCell align="center">Last Year</TableCell>
                     <TableCell align="center">+/-%</TableCell>
                     <TableCell align="center">Last Year Next 90 Days</TableCell>
-                    <TableCell align="center">90 Days Forecast</TableCell>
                     <TableCell align="center">Darft Qty</TableCell>
                     <TableCell align="center">Manager + / -</TableCell>
                     <TableCell align="center">Final Order Qty</TableCell>
@@ -675,11 +673,6 @@ class InventoryForecastList extends Component {
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               {item.last_year_next_90_sales_sold}
-                            </TableCell>
-                            <TableCell className="px-10" align="center">
-                              {
-                                item._90days_forecast
-                              }
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               {item.draftQty}
