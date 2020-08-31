@@ -170,13 +170,9 @@ class InventoryForecastList extends Component {
           manager: "",
           warehouseQty: "",
           unassignedQty: 0,
-          draftQty: item.last_year_next_90_sales_sold === 0 ? item.this_year_sales_sold * 3 : parseFloat(
-            item.totalInLocation +
-              item.inboundToLocation -
-              (item.rate * 90 +
-                (item.last_year_next_90_sales_sold || 0))
-          ).toFixed(2),
+          _90days_forecast: item.last_year_next_90_sales_sold != 0 ? parseInt(rate * 90 + (item.last_year_next_90_sales_sold)) : NaN,
         };
+        
         typeList.map((type) => {
           newObj.totalInLocation += item[`${type.name}_warehouse`]
             ? item[`${type.name}_warehouse`]
@@ -193,6 +189,8 @@ class InventoryForecastList extends Component {
             ? item[`${type.name}_warehouse_inbound`]
             : NaN;
         });
+        newObj.draftQty=item.last_year_next_90_sales_sold === 0 ? item.this_year_sales_sold * 3 : parseInt(newObj._90days_forecast -
+          newObj.totalInLocation - newObj.inboundToLocation);
         let finalQty = parseFloat(
           newObj.totalInLocation +
             newObj.inboundToLocation -
@@ -683,10 +681,7 @@ class InventoryForecastList extends Component {
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               {
-                                !isNaN(item.last_year_next_90_sales_sold) ? (
-                                item.rate * 90 +
-                                (item.last_year_next_90_sales_sold || 0)
-                              ).toFixed(2) : NaN
+                                item._90days_forecast
                               }
                             </TableCell>
                             <TableCell className="px-10" align="center">
