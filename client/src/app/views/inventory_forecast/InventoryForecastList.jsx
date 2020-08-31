@@ -191,11 +191,8 @@ class InventoryForecastList extends Component {
         });
         newObj.draftQty=item.last_year_next_90_sales_sold === 0 ? item.this_year_sales_sold * 3 : parseInt(newObj._90days_forecast -
           newObj.totalInLocation - newObj.inboundToLocation);
-        let finalQty = parseFloat(
-          newObj.totalInLocation +
-            newObj.inboundToLocation -
-            (newObj.rate * 90 + parseFloat(item.last_year_next_90_sales_sold)) +
-            parseFloat(newObj.manager ? newObj.manager : 0)
+        let finalQty = parseInt(
+          newObj.draftQty
         );
         if (item.last_year_next_90_sales_sold === 0)
           finalQty = newObj.draftQty;
