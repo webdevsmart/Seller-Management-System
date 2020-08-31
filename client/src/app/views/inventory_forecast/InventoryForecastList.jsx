@@ -170,6 +170,12 @@ class InventoryForecastList extends Component {
           manager: "",
           warehouseQty: "",
           unassignedQty: 0,
+          draftQty: item.last_year_next_90_sales_sold === 0 ? item.this_year_sales_sold * 3 : parseFloat(
+            item.totalInLocation +
+              item.inboundToLocation -
+              (item.rate * 90 +
+                (item.last_year_next_90_sales_sold || 0))
+          ).toFixed(2),
         };
         typeList.map((type) => {
           newObj.totalInLocation += item[`${type.name}_warehouse`]
@@ -193,6 +199,8 @@ class InventoryForecastList extends Component {
             (newObj.rate * 90 + parseFloat(item.last_year_next_90_sales_sold)) +
             parseFloat(newObj.manager ? newObj.manager : 0)
         );
+        if (item.last_year_next_90_sales_sold === 0)
+          finalQty = newObj.draftQty;
         newObj.finalQty = finalQty;
         compiledDataList.push(newObj);
       });
@@ -217,15 +225,7 @@ class InventoryForecastList extends Component {
     let index = compiledDataList.findIndex((x) => x.product_id === product_id);
     compiledDataList[index].manager = event.target.value;
 
-    compiledDataList[index].finalQty = parseFloat(
-      compiledDataList[index].totalInLocation +
-        compiledDataList[index].inboundToLocation -
-        (compiledDataList[index].rate * 90 +
-          (compiledDataList[index].last_year_next_90_sales_sold || 0)) +
-        parseFloat(
-          compiledDataList[index].manager ? compiledDataList[index].manager : 0
-        )
-    ).toFixed(2);
+    compiledDataList[index].finalQty = compiledDataList[index].draftQty + parseInt(event.target.value);
     compiledDataList[index].unassignedQty = parseInt(
       compiledDataList[index].finalQty
     );
@@ -690,13 +690,7 @@ class InventoryForecastList extends Component {
                               }
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {
-                                !isNaN(item.last_year_next_90_sales_sold) ? parseFloat(
-                                item.totalInLocation +
-                                  item.inboundToLocation -
-                                  (item.rate * 90 +
-                                    (item.last_year_next_90_sales_sold || 0))
-                              ).toFixed(2) : item.this_year_sales_sold * 3}
+                              {item.draftQty}
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               <TextField
@@ -710,7 +704,7 @@ class InventoryForecastList extends Component {
                               />
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(item.finalQty).toFixed(2)}
+                              {item.finalQty}
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               {item.unassignedQty}
