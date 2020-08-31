@@ -56,8 +56,10 @@ class ManageOEMOrder extends Component {
       return;
     }
     downloadPartsExcel({ids: this.state.selectedOrders}).then((res) => {
-      var blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      FileSaver.saveAs(blob, 'parts_list.xlsx');
+      const date = new Date();
+
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      FileSaver.saveAs(blob, 'parts_list_' + moment(date).format("YYYY-MM-DD(H:m:s)") + '.xlsx');
     });
   }
 

@@ -123,37 +123,35 @@ class InventoryForecastList extends Component {
       let { compiledDataList, typeList } = this.state;
       compiledDataList = [];
       let warehouseQtyList = res.data.warehouseList.map((item) => {
-        return { 
+        return {
           ...item,
           label: item.ID + " - " + item.short_name,
-          value: item._id
+          value: item._id,
         };
       });
-      this.setState({warehouseQtyList});
+      this.setState({ warehouseQtyList });
       res.data.results.map((item) => {
-        
         let rate = parseFloat(
-          (item.this_year_sales_sold -
-            item.last_year_sales_sold) /
+          (item.this_year_sales_sold - item.last_year_sales_sold) /
             item.this_year_sales_sold
         );
         if (item.this_year_sales_sold > item.last_year_sales_sold)
-            rate = parseFloat(
-              (item.this_year_sales_sold -
-                item.last_year_sales_sold) /
-                item.this_year_sales_sold
-            );
-        else  {
-          console.log("xx");
-          rate = 0 - parseFloat(
-            (item.last_year_sales_sold -
-              item.this_year_sales_sold) /
-              item.last_year_sales_sold
+          rate = parseFloat(
+            (item.this_year_sales_sold - item.last_year_sales_sold) /
+              item.this_year_sales_sold
           );
+        else {
+          console.log("xx");
+          rate =
+            0 -
+            parseFloat(
+              (item.last_year_sales_sold - item.this_year_sales_sold) /
+                item.last_year_sales_sold
+            );
         }
         rate = Number.isNaN(rate) ? 0 : rate;
         if (item.this_year_sales_sold == 0) rate = 0;
-        
+
         let newObj = {
           product_id: item.product_id,
           sku: item.sku,
@@ -162,26 +160,39 @@ class InventoryForecastList extends Component {
           name: item.name,
           this_year_sales_sold: item.this_year_sales_sold,
           last_year_sales_sold: item.last_year_sales_sold,
-          last_year_next_90_sales_sold: item.last_year_next_90_sales_sold,
+          last_year_next_90_sales_sold:
+            item.last_year_next_90_sales_sold === 0
+              ? NaN
+              : item.last_year_next_90_sales_sold,
           rate: rate,
           totalInLocation: 0,
           inboundToLocation: 0,
-          manager: 0,
-          warehouseQty: 0,
+          manager: "",
+          warehouseQty: "",
+          unassignedQty: 0,
         };
         typeList.map((type) => {
-          newObj.totalInLocation += item[`${type.name}_warehouse`] ? item[`${type.name}_warehouse`] : 0;
+          newObj.totalInLocation += item[`${type.name}_warehouse`]
+            ? item[`${type.name}_warehouse`]
+            : 0;
           newObj[`${type.name}_warehouse`] = item[`${type.name}_warehouse`]
             ? item[`${type.name}_warehouse`]
-            : "NA";
-          newObj.inboundToLocation = item[`${type.name}_warehouse_inbound`] ? item[`${type.name}_warehouse_inbound`] : 0;
+            : NaN;
+          newObj.inboundToLocation = item[`${type.name}_warehouse_inbound`]
+            ? item[`${type.name}_warehouse_inbound`]
+            : 0;
           newObj[`${type.name}_warehouse_inbound`] = item[
             `${type.name}_warehouse_inbound`
           ]
             ? item[`${type.name}_warehouse_inbound`]
-            : "NA";
+            : NaN;
         });
-        let finalQty = parseFloat( newObj.totalInLocation + newObj.inboundToLocation - (newObj.rate * 90 +  item.last_year_next_90_sales_sold) + parseFloat(newObj.manager ? newObj.manager : 0));
+        let finalQty = parseFloat(
+          newObj.totalInLocation +
+            newObj.inboundToLocation -
+            (newObj.rate * 90 + parseFloat(item.last_year_next_90_sales_sold)) +
+            parseFloat(newObj.manager ? newObj.manager : 0)
+        );
         newObj.finalQty = finalQty;
         compiledDataList.push(newObj);
       });
@@ -203,35 +214,40 @@ class InventoryForecastList extends Component {
 
   handleChangeMangerValue = (event, product_id) => {
     let { compiledDataList } = this.state;
-    let index = compiledDataList.findIndex(x => x.product_id ===product_id);
+    let index = compiledDataList.findIndex((x) => x.product_id === product_id);
     compiledDataList[index].manager = event.target.value;
-    
+
     compiledDataList[index].finalQty = parseFloat(
       compiledDataList[index].totalInLocation +
-      compiledDataList[index].inboundToLocation -
-      (compiledDataList[index].rate * 90 +
-        compiledDataList[index].last_year_next_90_sales_sold) +
-      parseFloat(compiledDataList[index].manager ? compiledDataList[index].manager : 0)
-    ).toFixed(2)
+        compiledDataList[index].inboundToLocation -
+        (compiledDataList[index].rate * 90 +
+          (compiledDataList[index].last_year_next_90_sales_sold || 0)) +
+        parseFloat(
+          compiledDataList[index].manager ? compiledDataList[index].manager : 0
+        )
+    ).toFixed(2);
+    compiledDataList[index].unassignedQty = parseInt(
+      compiledDataList[index].finalQty
+    );
 
     this.setState({ compiledDataList });
   };
 
   handleChangeWarehouseQTY = (event, product_id) => {
     let { compiledDataList } = this.state;
-    let index = compiledDataList.findIndex(x => x.product_id ===product_id);
+    let index = compiledDataList.findIndex((x) => x.product_id === product_id);
     compiledDataList[index].warehouseQty = event.target.value;
     this.setState({ compiledDataList });
-  }
+  };
 
   createOEMOrder = () => {
-    let {compiledDataList} = this.state;
+    let { compiledDataList } = this.state;
     let newItems = compiledDataList.map((item, index) => {
       return {
         product_id: item.product_id,
         warehouse_qty: item.warehouseQty ? item.warehouseQty : 0,
         order_qty: item.finalQty ? item.finalQty : 0,
-      }
+      };
     });
     let postData = {
       ID: "O" + generateRandomId(),
@@ -239,41 +255,42 @@ class InventoryForecastList extends Component {
       warehouse_for_qty: this.state.warehouseForQty.value,
       date: this.state.monthYear,
       forecast_type: this.state.forecastType,
-      selected_warehouse: this.state.selectedWarehouse ? this.state.selectedWarehouse.value : null,
-      selected_country: this.state.selectedCountry ? this.state.selectedCountry.value : null,
-      selected_region: this.state.selectedRegion ? this.state.selectedRegion.value : null,
-      selected_type: this.state.selectedType ? this.state.selectedType.value : null,
+      selected_warehouse: this.state.selectedWarehouse
+        ? this.state.selectedWarehouse.value
+        : null,
+      selected_country: this.state.selectedCountry
+        ? this.state.selectedCountry.value
+        : null,
+      selected_region: this.state.selectedRegion
+        ? this.state.selectedRegion.value
+        : null,
+      selected_type: this.state.selectedType
+        ? this.state.selectedType.value
+        : null,
       submitted_user: JSON.parse(localStorage.getItem("auth_user"))._id,
       editted_user: JSON.parse(localStorage.getItem("auth_user"))._id,
     };
     addNewOEMOrder(postData).then((res) => {
-      this.setState({messageOpen: true, messageType: 'success', messageContent: 'OEM order has been created successfully.'});
-      let initial = {
-        orderList: [],
-        forecastType: "single",
-        monthYear: new Date(),
-        expanded: false,
-        groupOption: "country",
-        selectedWarehouse: null,
-        warehouseForQty: null,
-        selectedCountry: null,
-        selectedType: null,
-        selectedRegion: null,
-        compiledDataList: [],
-        forecastManagerValues: [],
-        warehouseQtyList: [],
-        rowsPerPage: 10,
-        page: 0,
-        isCompiled: false,
-      }
-      this.setState({...initial});
+      this.setState({
+        messageOpen: true,
+        messageType: "success",
+        messageContent: "OEM order has been created successfully.",
+      });
+      let { compiledDataList } = this.state;
+      compiledDataList = compiledDataList.map((data) => {
+        return {
+          ...data,
+          unassignedQty: data.unassignedQty - data.warehouseQty,
+          warehouseQty: "",
+        };
+      });
+      this.setState({ compiledDataList });
     });
-  }
+  };
 
   closeMessage = () => {
     this.setState({ messageOpen: false });
   };
-
 
   render() {
     let {
@@ -297,7 +314,7 @@ class InventoryForecastList extends Component {
       messageOpen,
       messageType,
       messageContent,
-      isCompiled
+      isCompiled,
     } = this.state;
 
     return (
@@ -368,7 +385,6 @@ class InventoryForecastList extends Component {
                     >
                       Compiled Data
                     </Button>
-
                   </Grid>
                   <Grid item lg={12} md={12} sm={12} xs={12}>
                     {forecastType === "single" && (
@@ -482,12 +498,11 @@ class InventoryForecastList extends Component {
           </AccordionDetails>
         </Accordion>
         {/* </Card> */}
-        
+
         <div className="w-100 mt-24 mb-24">
           <Grid container spacing={2}>
             <Grid item lg={8} md={8} sm={6} xs={12}>
-            {
-              isCompiled && (
+              {isCompiled && (
                 <CustomSelect
                   textFieldProps={{
                     label: "Select Warehouse",
@@ -503,8 +518,7 @@ class InventoryForecastList extends Component {
                   }
                   selectedValue={warehouseForQty}
                 />
-              )
-            }
+              )}
             </Grid>
             <Grid item lg={4} md={4} sm={6} xs={12}>
               <Button
@@ -544,7 +558,7 @@ class InventoryForecastList extends Component {
                     <TableCell
                       align="center"
                       colSpan={typeList.length + 3}
-                      width="35%"
+                      width="30%"
                       className="bg-primary"
                     ></TableCell>
                     <TableCell
@@ -566,10 +580,9 @@ class InventoryForecastList extends Component {
                     <TableCell
                       align="center"
                       className="bg-primary"
-                      width="5%"
-                    >
-                      
-                    </TableCell>
+                      width="10%"
+                      colSpan={2}
+                    ></TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell align="center">Product</TableCell>
@@ -592,6 +605,7 @@ class InventoryForecastList extends Component {
                     <TableCell align="center">Darft Qty</TableCell>
                     <TableCell align="center">Manager + / -</TableCell>
                     <TableCell align="center">Final Order Qty</TableCell>
+                    <TableCell align="center">Unassigned Qty</TableCell>
                     <TableCell align="center">Warehouse QTY</TableCell>
                   </TableRow>
                 </TableHead>
@@ -668,24 +682,30 @@ class InventoryForecastList extends Component {
                               {item.last_year_next_90_sales_sold}
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {(
+                              {
+                                !isNaN(item.last_year_next_90_sales_sold) ? (
                                 item.rate * 90 +
-                                item.last_year_next_90_sales_sold
-                              ).toFixed(2)}
+                                (item.last_year_next_90_sales_sold || 0)
+                              ).toFixed(2) : NaN
+                              }
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {parseFloat(
+                              {
+                                !isNaN(item.last_year_next_90_sales_sold) ? parseFloat(
                                 item.totalInLocation +
-                                item.inboundToLocation -
+                                  item.inboundToLocation -
                                   (item.rate * 90 +
-                                    item.last_year_next_90_sales_sold)
-                              ).toFixed(2)}
+                                    (item.last_year_next_90_sales_sold || 0))
+                              ).toFixed(2) : item.this_year_sales_sold * 3}
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               <TextField
-                                value={item.manager ? item.manager : 0}
+                                value={item.manager ? item.manager : ""}
                                 onChange={(event) =>
-                                  this.handleChangeMangerValue(event, item.product_id )
+                                  this.handleChangeMangerValue(
+                                    event,
+                                    item.product_id
+                                  )
                                 }
                               />
                             </TableCell>
@@ -693,10 +713,18 @@ class InventoryForecastList extends Component {
                               {parseFloat(item.finalQty).toFixed(2)}
                             </TableCell>
                             <TableCell className="px-10" align="center">
+                              {item.unassignedQty}
+                            </TableCell>
+                            <TableCell className="px-10" align="center">
                               <TextField
-                                value={item.warehouseQty ? item.warehouseQty : 0}
+                                value={
+                                  item.warehouseQty ? item.warehouseQty : ""
+                                }
                                 onChange={(event) =>
-                                  this.handleChangeWarehouseQTY(event, item.product_id)
+                                  this.handleChangeWarehouseQTY(
+                                    event,
+                                    item.product_id
+                                  )
                                 }
                               />
                             </TableCell>
@@ -723,21 +751,21 @@ class InventoryForecastList extends Component {
               />
             </div>
           </Grid>
-        <Snackbar
-          anchorOrigin={{
-            vertical: "top",
-            horizontal: "right",
-          }}
-          open={messageOpen}
-          autoHideDuration={2000}
-          onClose={this.closeMessage}
-        >
-          <MySnackbarContentWrapper
+          <Snackbar
+            anchorOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            open={messageOpen}
+            autoHideDuration={2000}
             onClose={this.closeMessage}
-            variant={messageType}
-            message={messageContent}
-          />
-        </Snackbar>
+          >
+            <MySnackbarContentWrapper
+              onClose={this.closeMessage}
+              variant={messageType}
+              message={messageContent}
+            />
+          </Snackbar>
         </Grid>
       </div>
     );

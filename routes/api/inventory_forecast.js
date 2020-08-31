@@ -98,10 +98,22 @@ router.post("/report", async (req, res) => {
           lastYearReportIDs = lastYearReportIDs.map((id) => {
             return id._id;
           });
-          let lastNext90ReportIDs = await SalesOutletReport.find({
+          lastNext90ReportIDs = [];
+          lastNext90ReportIDs = await SalesOutletReport.find({
             sales_outlet: { $in: salesOutlets },
             date: { $in: lastYearNext90 },
           }).select({ _id: 1 });
+          await Promise.all(
+            lastYearNext90.map(async (d) => {
+              isExist = await SalesOutletReport.count({
+                sales_outlet: { $in: salesOutlets },
+                date: d,
+              })
+              if (isExist == 0) {
+                lastNext90ReportIDs = []
+              }
+            })
+          );
           lastNext90ReportIDs = lastNext90ReportIDs.map((id) => {
             return id._id;
           });
