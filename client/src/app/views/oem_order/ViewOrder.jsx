@@ -157,7 +157,8 @@ class ViewOrder extends Component {
                 <TableBody>
                   {
                     product_list && product_list.map((product, index) => {
-                      return (
+                      if (product.quantity != 0) {
+                        return (
                           <TableRow key={index}>
                             <TableCell align="center">{product.quantity}</TableCell>
                             <TableCell align="center">{product.upc}</TableCell>
@@ -166,6 +167,7 @@ class ViewOrder extends Component {
                             <TableCell align="center">{product.name}</TableCell>
                           </TableRow>
                       )
+                      }
                     })
                   }
                 </TableBody>
@@ -224,18 +226,21 @@ class ViewOrder extends Component {
                         <>
                         {
                           product.parts_list.map((part, part_index) => {
-                            return (
-                              <TableRow key={generateRandomId()}>
-                                <TableCell align="center">{parseInt(part.quantity)}</TableCell>
-                                <TableCell align="center">{part.ID}</TableCell>
-                                <TableCell align="center">{part.name}</TableCell>
-                                <TableCell align="center">{part.type.name}</TableCell>
-                                <TableCell align="center">{part.UM.name}</TableCell>
-                                <TableCell align="center">$ {part.cost_usd}</TableCell>
-                                <TableCell align="center">{part.supplier_id.ID}</TableCell>
-                                <TableCell align="center">{part.supplier_id.name}</TableCell>
-                              </TableRow>
-                            )
+                            if (part.quantity != 0) {
+
+                              return (
+                                <TableRow key={generateRandomId()}>
+                                  <TableCell align="center">{parseInt(part.quantity)}</TableCell>
+                                  <TableCell align="center">{part.ID}</TableCell>
+                                  <TableCell align="center">{part.name}</TableCell>
+                                  <TableCell align="center">{part.type.name}</TableCell>
+                                  <TableCell align="center">{part.UM.name}</TableCell>
+                                  <TableCell align="center">$ {part.cost_usd}</TableCell>
+                                  <TableCell align="center">{part.supplier_id.ID}</TableCell>
+                                  <TableCell align="center">{part.supplier_id.name}</TableCell>
+                                </TableRow>
+                              )
+                            }
                           })
                         }
                         </>

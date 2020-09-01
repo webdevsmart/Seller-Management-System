@@ -141,7 +141,6 @@ class InventoryForecastList extends Component {
               item.this_year_sales_sold
           );
         else {
-          console.log("xx");
           rate =
             0 -
             parseFloat(
@@ -149,8 +148,8 @@ class InventoryForecastList extends Component {
                 item.last_year_sales_sold
             );
         }
-        rate = Number.isNaN(rate) ? 0 : rate;
-        if (item.this_year_sales_sold == 0) rate = 0;
+        if (item.this_year_sales_sold == 0) rate = 'NA';
+        if (item.last_year_sales_sold == 0) rate = 'NA';
 
         let newObj = {
           product_id: item.product_id,
@@ -235,6 +234,8 @@ class InventoryForecastList extends Component {
   };
 
   createOEMOrder = () => {
+    if (this.state.warehouseForQty === null)
+      return;
     let { compiledDataList } = this.state;
     let newItems = compiledDataList.map((item, index) => {
       return {
@@ -669,7 +670,7 @@ class InventoryForecastList extends Component {
                               {item.last_year_sales_sold}
                             </TableCell>
                             <TableCell className="px-10" align="center">
-                              {(item.rate * 100).toFixed(2)} %
+                              {item.rate === 'NA' ? item.rate : parseInt(item.rate * 100).toFixed(2) + '%'}
                             </TableCell>
                             <TableCell className="px-10" align="center">
                               {item.last_year_next_90_sales_sold}
