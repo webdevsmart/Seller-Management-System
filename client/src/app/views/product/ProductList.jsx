@@ -133,7 +133,7 @@ class ProductList extends Component {
                   <a href="#!" onClick={() => this.handleClickAvatar(this.state.productList[dataIndex].img)}>
                     <Avatar
                       className="avatar"
-                      src={`/${this.state.productList[dataIndex].img[0].path}`}
+                      src={this.state.productList[dataIndex].img[0] ? `/${this.state.productList[dataIndex].img[0].path}` : ''}
                     />
                   </a>
                 )
